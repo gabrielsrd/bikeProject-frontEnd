@@ -1,70 +1,89 @@
-# Getting Started with Create React App
+### README
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## Projeto (Português)
 
-## Available Scripts
+**Título**: Aplicação Web para Análise de Ciclofaixas e Estações de Bicicletas Compartilhadas em São Paulo
 
-In the project directory, you can run:
+**Descrição**: Este projeto faz parte do Trabalho de Conclusão de Curso (TCC) em Ciência da Computação e consiste em uma aplicação web interativa desenvolvida em React. A página exibe um mapa da cidade de São Paulo, com informações sobre as ciclofaixas (faixas dedicadas para bicicletas) e as estações de bicicletas compartilhadas fornecidas pela Tembici. 
 
-### `npm start`
+Os usuários podem aplicar filtros no mapa para visualizar:
+- Ciclofaixas existentes
+- Localização das estações de bicicletas Tembici
+- Zonas da cidade que necessitam de mais ciclofaixas ou melhorias na infraestrutura cicloviária
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+Além disso, a aplicação exibe dados de usuários de bicicletas, incluindo as rotas mais utilizadas. Este sistema é voltado para:
+1. Organizações e empresas que desejam entender e melhorar a infraestrutura cicloviária urbana.
+2. Operadoras de bicicletas compartilhadas, que podem usar os dados para otimizar suas operações.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+A aplicação obtém os dados em formato GeoJSON de uma API desenvolvida em Python, localizada em outro repositório, que realiza cálculos e processa informações para fornecer os dados geográficos.
 
-### `npm test`
+**Funcionalidades**:
+- **Mapeamento Interativo**: permite a navegação pelo mapa de São Paulo.
+- **Filtros**: exibe ciclofaixas, estações de bicicletas e áreas que precisam de infraestrutura adicional.
+- **Análise de Dados**: visualização de dados sobre uso de bicicletas, rotas percorridas e insights para melhorias.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+**Tecnologias Utilizadas**:
+- **Frontend**: React, JavaScript
+- **Backend**: API em Python (para processamento de dados e geração de GeoJSON)
+- **Mapas**: integração com serviços de mapas para renderização e visualização
 
-### `npm run build`
+**Como Executar o Projeto**:
+1. Clone o repositório:
+   ```bash
+   git clone https://github.com/seuusuario/nomerepositorio.git
+   ```
+2. Instale as dependências:
+   ```bash
+   cd nomerepositorio
+   npm install
+   ```
+3. Inicie a aplicação:
+   ```bash
+   npm start
+   ```
+4. Configure o backend (repositório Python) para fornecer os dados da API, e certifique-se de que o backend está em execução antes de carregar a página.
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+---
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Project (English)
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+**Title**: Web Application for Analyzing Bike Lanes and Shared Bike Stations in São Paulo
 
-### `npm run eject`
+**Description**: This project is part of the undergraduate thesis in Computer Science, featuring an interactive web application built with React. The webpage displays a map of São Paulo, including information on bike lanes and shared bike stations provided by Tembici.
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+Users can apply filters on the map to visualize:
+- Existing bike lanes
+- Locations of Tembici bike-sharing stations
+- Zones in need of more bike lanes or infrastructure improvements
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+Additionally, the app shows data on bike users and the routes they frequent. This system is designed for:
+1. Organizations and businesses looking to improve urban cycling infrastructure.
+2. Shared bike providers aiming to optimize their services based on usage insights.
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+The application retrieves data in GeoJSON format from a Python-based API (located in a separate repository), which performs calculations and processes information to provide geographical data.
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+**Features**:
+- **Interactive Map**: enables navigation through São Paulo’s map.
+- **Filters**: displays bike lanes, bike-sharing stations, and areas needing additional infrastructure.
+- **Data Analysis**: provides visualizations of bike usage data, frequently used routes, and actionable insights.
 
-## Learn More
+**Technologies Used**:
+- **Frontend**: React, JavaScript
+- **Backend**: Python API (for data processing and GeoJSON generation)
+- **Maps**: integration with mapping services for rendering and visualization
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+**How to Run the Project**:
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/repositoryname.git
+   ```
+2. Install dependencies:
+   ```bash
+   cd repositoryname
+   npm install
+   ```
+3. Start the application:
+   ```bash
+   npm start
+   ```
+4. Ensure the backend (Python repository) is configured to serve the API data and is running before loading the frontend page.
