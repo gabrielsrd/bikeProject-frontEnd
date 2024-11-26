@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { MapContainer, TileLayer, GeoJSON, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
 import axios from "axios";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -8,7 +8,6 @@ const FetchGeoJsonOnMove = ({ onBoundsChange }) => {
   const map = useMap();
 
   useEffect(() => {
-
     const handleBoundsChange = () => {
       const bounds = map.getBounds(); // Get current map bounds
       const bbox = {
@@ -20,7 +19,6 @@ const FetchGeoJsonOnMove = ({ onBoundsChange }) => {
 
     map.on("moveend", handleBoundsChange); // Trigger on map move
 
-
     return () => {
       map.off("moveend", handleBoundsChange); // Cleanup
     };
@@ -30,9 +28,8 @@ const FetchGeoJsonOnMove = ({ onBoundsChange }) => {
 };
 
 const Mapa = () => {
-  const [geoJsonData, setGeoJsonData] = useState(null);
-  const [renderedFeatures, setRenderedFeatures] = useState([]); // Rendered features
-  const CHUNK_SIZE = 50; // Number of features to render per chunk
+  const [stationsData, setStationsData] = useState([]); // Data for stations (points)
+  const [cicloviasData, setCicloviasData] = useState([]); // Data for ciclovias (lines)
   const position = [-23.533773, -46.625290]; // Map center coordinates
 
   // Fix default marker icon
@@ -43,42 +40,46 @@ const Mapa = () => {
     shadowUrl: require("leaflet/dist/images/marker-shadow.png"),
   });
 
-
   useEffect(() => {
-    // Fetch GeoJSON data from API
+    // Fetch GeoJSON data for stations
+    axios
+      .get("http://127.0.0.1:8000/api/ciclostation/")
+      .then((response) => {
+        const features = response.data.features.map((feature) => ({
+          id: feature.properties.id, // Adjust to match your data
+          name: feature.properties.name, // Adjust as needed
+          coordinates: feature.geometry.coordinates,
+        }));
+        setStationsData(features);
+      })
+      .catch((error) => {
+        console.error("Error fetching station data:", error);
+      });
+
+    // Fetch GeoJSON data for ciclovias
     axios
       .get("http://127.0.0.1:8000/api/ciclovias/")
       .then((response) => {
-        setGeoJsonData(response.data);
-        setRenderedFeatures(response.data.features.slice(0, CHUNK_SIZE)); // Load the first chunk
+        console.log("responswe ciclovia",response.data)
+        const features = response.data.features.map((feature) => ({
+          id: feature.properties.programa, // Use programa as ID or another unique property
+          programa: feature.properties.programa,
+          inauguracao: feature.properties.inauguracao,
+          extensao_t: feature.properties.extensao_t,
+          extensao_c: feature.properties.extensao_c,
+          coordinates: feature.geometry.coordinates,
+        }));
+        console.log("features",features)
+        setCicloviasData(features);
       })
       .catch((error) => {
-        console.error("Erro ao buscar dados GeoJSON:", error);
+        console.error("Error fetching ciclovias data:", error);
       });
   }, []);
 
-  const loadMoreFeatures = (bbox) => {
-    if (geoJsonData) {
-      // get the features in the bbox
-      const { southwest, northeast } = bbox;
-      const features = geoJsonData.features.filter((feature) => {
-        const [lng, lat] = feature.geometry.coordinates;
-        return lng > southwest.lng && lng < northeast.lng && lat > southwest.lat && lat < northeast.lat;
-      });
-      // Load the next chunk
-      console.log("bboxParam", bbox);
-      console.log("features", features);
-      setTimeout(() => {
-        setRenderedFeatures([features]);
-      }, 10000);
-
-    }
-  };
-
-
-
-  const loadFeatures = async (bbox) => {
-    loadMoreFeatures(bbox)
+  const loadFeatures = (bbox) => {
+    console.log("Map moved, new bounds:", bbox);
+    // Optionally, filter data based on bbox if needed
   };
 
   return (
@@ -87,45 +88,44 @@ const Mapa = () => {
         center={position}
         zoom={13}
         style={{ height: "100vh", width: "100%" }}
-
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; OpenStreetMap contributors'
+          attribution="&copy; OpenStreetMap contributors"
         />
         <FetchGeoJsonOnMove onBoundsChange={loadFeatures} />
 
+        {/* Render Markers for Stations */}
+        {stationsData.map((station) => (
+          <Marker
+            key={station.id}
+            position={[station.coordinates[1], station.coordinates[0]]} // Lat, Lng format
+          >
+            <Popup>
+              <strong>{station.name}</strong>
+            </Popup>
+          </Marker>
+        ))}
 
-        {renderedFeatures.length > 0 && (
-          <GeoJSON
-            data={{
-              ...geoJsonData,
-              features: renderedFeatures, // Render only the current chunk
-            }}
-          />
-        )}
+        {/* Render Polylines for Ciclovias */}
+        {cicloviasData.map((ciclovia) => (
+          <Polyline
+            key={ciclovia.id}
+            positions={ciclovia.coordinates.map((coord) => [coord[1], coord[0]])} // Lat, Lng format
+            color="blue" // Adjust the color as needed
+          >
+            <Popup>
+              <strong>{ciclovia.programa}</strong>
+              <br />
+              Inauguração: {ciclovia.inauguracao}
+              <br />
+              Extensão Total: {ciclovia.extensao_t} m
+              <br />
+              Extensão Ciclovia: {ciclovia.extensao_c} m
+            </Popup>
+          </Polyline>
+        ))}
       </MapContainer>
-
-      {/* Button to load more features */}
-      <div
-        style={{
-          position: "absolute",
-          bottom: "20px",
-          right: "20px",
-          backgroundColor: "rgba(255, 255, 255, 0.8)",
-          padding: "10px 15px",
-          borderRadius: "8px",
-          boxShadow: "0 2px 5px rgba(0,0,0,0.3)",
-          zIndex: 1000,
-        }}
-      >
-
-        {/* <button onClick={loadMoreFeatures} disabled={renderedFeatures.length >= geoJsonData?.features.length}>
-          {renderedFeatures.length >= geoJsonData?.features.length
-            ? "All features loaded"
-            : "Load more features"}
-        </button> */}
-      </div>
     </div>
   );
 };
