@@ -30,6 +30,8 @@ const FetchGeoJsonOnMove = ({ onBoundsChange }) => {
 const Mapa = () => {
   const [stationsData, setStationsData] = useState([]); // Data for stations (points)
   const [cicloviasData, setCicloviasData] = useState([]); // Data for ciclovias (lines)
+  const [showStations, setShowStations] = useState(true); // Toggle visibility for stations
+  const [showCiclovias, setShowCiclovias] = useState(true); // Toggle visibility for ciclovias
   const position = [-23.533773, -46.625290]; // Map center coordinates
 
   // Fix default marker icon
@@ -60,7 +62,6 @@ const Mapa = () => {
     axios
       .get("http://127.0.0.1:8000/api/ciclovias/")
       .then((response) => {
-        console.log("responswe ciclovia",response.data)
         const features = response.data.features.map((feature) => ({
           id: feature.properties.programa, // Use programa as ID or another unique property
           programa: feature.properties.programa,
@@ -69,7 +70,6 @@ const Mapa = () => {
           extensao_c: feature.properties.extensao_c,
           coordinates: feature.geometry.coordinates,
         }));
-        console.log("features",features)
         setCicloviasData(features);
       })
       .catch((error) => {
@@ -96,36 +96,73 @@ const Mapa = () => {
         <FetchGeoJsonOnMove onBoundsChange={loadFeatures} />
 
         {/* Render Markers for Stations */}
-        {stationsData.map((station) => (
-          <Marker
-            key={station.id}
-            position={[station.coordinates[1], station.coordinates[0]]} // Lat, Lng format
-          >
-            <Popup>
-              <strong>{station.name}</strong>
-            </Popup>
-          </Marker>
-        ))}
+        {showStations &&
+          stationsData.map((station) => (
+            <Marker
+              key={station.id}
+              position={[station.coordinates[1], station.coordinates[0]]} // Lat, Lng format
+            >
+              <Popup>
+                <strong>{station.name}</strong>
+              </Popup>
+            </Marker>
+          ))}
 
         {/* Render Polylines for Ciclovias */}
-        {cicloviasData.map((ciclovia) => (
-          <Polyline
-            key={ciclovia.id}
-            positions={ciclovia.coordinates.map((coord) => [coord[1], coord[0]])} // Lat, Lng format
-            color="blue" // Adjust the color as needed
-          >
-            <Popup>
-              <strong>{ciclovia.programa}</strong>
-              <br />
-              Inauguração: {ciclovia.inauguracao}
-              <br />
-              Extensão Total: {ciclovia.extensao_t} m
-              <br />
-              Extensão Ciclovia: {ciclovia.extensao_c} m
-            </Popup>
-          </Polyline>
-        ))}
+        {showCiclovias &&
+          cicloviasData.map((ciclovia) => (
+            <Polyline
+              key={ciclovia.id}
+              positions={ciclovia.coordinates.map((coord) => [coord[1], coord[0]])} // Lat, Lng format
+              color="blue" // Adjust the color as needed
+            >
+              <Popup>
+                <strong>{ciclovia.programa}</strong>
+                <br />
+                Inauguração: {ciclovia.inauguracao}
+                <br />
+                Extensão Total: {ciclovia.extensao_t} m
+                <br />
+                Extensão Ciclovia: {ciclovia.extensao_c} m
+              </Popup>
+            </Polyline>
+          ))}
       </MapContainer>
+
+      {/* Control Panel for Toggling Layers */}
+      <div
+        style={{
+          position: "absolute",
+          top: "10px",
+          right: "10px",
+          backgroundColor: "rgba(255, 255, 255, 0.9)",
+          padding: "10px 15px",
+          borderRadius: "8px",
+          boxShadow: "0 2px 5px rgba(0,0,0,0.3)",
+          zIndex: 1000,
+        }}
+      >
+        <div>
+          <label>
+            <input
+              type="checkbox"
+              checked={showStations}
+              onChange={(e) => setShowStations(e.target.checked)}
+            />
+            Show Ciclostations
+          </label>
+        </div>
+        <div>
+          <label>
+            <input
+              type="checkbox"
+              checked={showCiclovias}
+              onChange={(e) => setShowCiclovias(e.target.checked)}
+            />
+            Show Ciclovias
+          </label>
+        </div>
+      </div>
     </div>
   );
 };
