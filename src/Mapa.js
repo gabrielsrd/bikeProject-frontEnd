@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -11,8 +11,6 @@ import {
 import axios from "axios";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { MarkerClusterGroup } from 'react-leaflet-cluster';
-
 
 const FetchGeoJsonOnMove = ({ onBoundsChange }) => {
   const map = useMap();
@@ -124,6 +122,56 @@ const Mapa = () => {
     // Optionally, filter data based on bbox if needed
   };
 
+  // Create markers and polylines outside JSX
+  const markers = useMemo(() => {
+    return stationsData.map((station) => (
+      <Marker
+        key={station.id}
+        position={[station.coordinates[1], station.coordinates[0]]}
+      >
+        <Popup>
+          <strong>{station.name}</strong>
+          <br />
+          ID: {station.id}
+        </Popup>
+      </Marker>
+    ));
+  }, [stationsData]);
+
+  const polylines = useMemo(() => {
+    return cicloviasData.map((ciclovia) => (
+      <Polyline
+        key={ciclovia.id}
+        positions={ciclovia.coordinates.map((coord) => [coord[1], coord[0]])}
+        color={
+          ciclovia.distance_to_closest_station_m > distanceThreshold
+            ? "red"
+            : "blue"
+        }
+        eventHandlers={{
+          click: () => {
+            console.log(`Clicked on Ciclovia: ${ciclovia.programa}`);
+            handleCicloviaClick(ciclovia); // Call the click handler
+          },
+        }}
+      >
+        <Popup>
+          <strong>{ciclovia.programa}</strong>
+          <br />
+          Inauguração: {ciclovia.inauguracao}
+          <br />
+          Extensão Total: {ciclovia.extensao_t} m
+          <br />
+          Extensão Ciclovia: {ciclovia.extensao_c} m
+          <br />
+          Estação mais Próxima: {ciclovia.closest_station_id}
+          <br />
+          Distância da estação mais próxima: {ciclovia.distance_to_closest_station_m} m
+        </Popup>
+      </Polyline>
+    ));
+  }, [cicloviasData, distanceThreshold]);
+
   return (
     <div style={{ position: "relative" }}>
       <MapContainer
@@ -138,55 +186,10 @@ const Mapa = () => {
         <FetchGeoJsonOnMove onBoundsChange={loadFeatures} />
 
         {/* Render Markers for Stations */}
-        <MarkerClusterGroup>
-        {showStations &&
-          stationsData.map((station) => (
-            <Marker
-              key={station.id}
-              position={[station.coordinates[1], station.coordinates[0]]}
-            >
-              <Popup>
-                <strong>{station.name}</strong>
-                <br />
-                ID: {station.id}
-              </Popup>
-            </Marker>
-          ))}
-          </MarkerClusterGroup>
+        {showStations && markers}
 
         {/* Render Polylines for Ciclovias */}
-        {showCiclovias &&
-          cicloviasData.map((ciclovia) => (
-            <Polyline
-              key={ciclovia.id}
-              positions={ciclovia.coordinates.map((coord) => [coord[1], coord[0]])}
-              color={
-                ciclovia.distance_to_closest_station_m > distanceThreshold
-                  ? "red"
-                  : "blue"
-              }
-              eventHandlers={{
-                click: () => {
-                  console.log(`Clicked on Ciclovia: ${ciclovia.programa}`);
-                  handleCicloviaClick(ciclovia); // Call the click handler
-                },
-              }}
-            >
-              <Popup>
-                <strong>{ciclovia.programa}</strong>
-                <br />
-                Inauguração: {ciclovia.inauguracao}
-                <br />
-                Extensão Total: {ciclovia.extensao_t} m
-                <br />
-                Extensão Ciclovia: {ciclovia.extensao_c} m
-                <br />
-                Estação mais Próxima: {ciclovia.closest_station_id}
-                <br />
-                Distância da estação mais próxima: {ciclovia.distance_to_closest_station_m} m
-              </Popup>
-            </Polyline>
-          ))}
+        {showCiclovias && polylines}
 
         {/* Highlighted Station */}
         {highlightedStation && (
