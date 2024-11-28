@@ -1,8 +1,18 @@
 import React, { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  Polyline,
+  useMap,
+  CircleMarker,
+} from "react-leaflet";
 import axios from "axios";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { MarkerClusterGroup } from 'react-leaflet-cluster';
+
 
 const FetchGeoJsonOnMove = ({ onBoundsChange }) => {
   const map = useMap();
@@ -30,8 +40,12 @@ const FetchGeoJsonOnMove = ({ onBoundsChange }) => {
 const Mapa = () => {
   const [stationsData, setStationsData] = useState([]); // Data for stations (points)
   const [cicloviasData, setCicloviasData] = useState([]); // Data for ciclovias (lines)
+  const [highlightedStation, setHighlightedStation] = useState(null); // Highlighted station
+  const [highlightedLine, setHighlightedLine] = useState(null); // Line from ciclovia to station
   const [showStations, setShowStations] = useState(true); // Toggle visibility for stations
   const [showCiclovias, setShowCiclovias] = useState(true); // Toggle visibility for ciclovias
+  const [distanceThreshold, setDistanceThreshold] = useState(1000); // Threshold for coloring
+  const [distanceInput, setDistanceInput] = useState(1000); // User's input for threshold
   const position = [-23.533773, -46.625290]; // Map center coordinates
 
   // Fix default marker icon
@@ -48,8 +62,8 @@ const Mapa = () => {
       .get("http://127.0.0.1:8000/api/ciclostation/")
       .then((response) => {
         const features = response.data.features.map((feature) => ({
-          id: feature.properties.id, // Adjust to match your data
-          name: feature.properties.name, // Adjust as needed
+          id: feature.properties.id,
+          name: feature.properties.name,
           coordinates: feature.geometry.coordinates,
         }));
         setStationsData(features);
@@ -63,12 +77,14 @@ const Mapa = () => {
       .get("http://127.0.0.1:8000/api/ciclovias/")
       .then((response) => {
         const features = response.data.features.map((feature) => ({
-          id: feature.properties.programa, // Use programa as ID or another unique property
+          id: feature.properties.programa,
           programa: feature.properties.programa,
           inauguracao: feature.properties.inauguracao,
           extensao_t: feature.properties.extensao_t,
           extensao_c: feature.properties.extensao_c,
           coordinates: feature.geometry.coordinates,
+          closest_station_id: feature.properties.closest_station_id,
+          distance_to_closest_station_m: feature.properties.distance_to_closest_station_m,
         }));
         setCicloviasData(features);
       })
@@ -76,6 +92,32 @@ const Mapa = () => {
         console.error("Error fetching ciclovias data:", error);
       });
   }, []);
+
+  const handleCicloviaClick = (ciclovia) => {
+    console.log(ciclovia);
+    const nearestStation = stationsData.find(
+      (station) => station.id === ciclovia.closest_station_id
+    );
+
+    if (nearestStation) {
+      setHighlightedStation(nearestStation); // Highlight the station
+      setHighlightedLine([
+        [nearestStation.coordinates[1], nearestStation.coordinates[0]], // Lat, Lng
+        [ciclovia.coordinates[0][1], ciclovia.coordinates[0][0]], // Start of the ciclovia
+      ]);
+    }
+  };
+
+  const handleDistanceSubmit = (e) => {
+    e.preventDefault(); // Prevent page reload
+    setShowCiclovias(false); // Ensure ciclovias are visible
+    console.log(`Updating threshold to: ${distanceInput}`);
+    setDistanceThreshold(Number(distanceInput)); // Update threshold
+  };
+
+  useEffect(() => {
+    setShowCiclovias(true); // Re-enable ciclovias
+  }, [distanceThreshold]);
 
   const loadFeatures = (bbox) => {
     console.log("Map moved, new bounds:", bbox);
@@ -96,25 +138,39 @@ const Mapa = () => {
         <FetchGeoJsonOnMove onBoundsChange={loadFeatures} />
 
         {/* Render Markers for Stations */}
+        <MarkerClusterGroup>
         {showStations &&
           stationsData.map((station) => (
             <Marker
               key={station.id}
-              position={[station.coordinates[1], station.coordinates[0]]} // Lat, Lng format
+              position={[station.coordinates[1], station.coordinates[0]]}
             >
               <Popup>
                 <strong>{station.name}</strong>
+                <br />
+                ID: {station.id}
               </Popup>
             </Marker>
           ))}
+          </MarkerClusterGroup>
 
         {/* Render Polylines for Ciclovias */}
         {showCiclovias &&
           cicloviasData.map((ciclovia) => (
             <Polyline
               key={ciclovia.id}
-              positions={ciclovia.coordinates.map((coord) => [coord[1], coord[0]])} // Lat, Lng format
-              color="blue" // Adjust the color as needed
+              positions={ciclovia.coordinates.map((coord) => [coord[1], coord[0]])}
+              color={
+                ciclovia.distance_to_closest_station_m > distanceThreshold
+                  ? "red"
+                  : "blue"
+              }
+              eventHandlers={{
+                click: () => {
+                  console.log(`Clicked on Ciclovia: ${ciclovia.programa}`);
+                  handleCicloviaClick(ciclovia); // Call the click handler
+                },
+              }}
             >
               <Popup>
                 <strong>{ciclovia.programa}</strong>
@@ -124,12 +180,28 @@ const Mapa = () => {
                 Extensão Total: {ciclovia.extensao_t} m
                 <br />
                 Extensão Ciclovia: {ciclovia.extensao_c} m
+                <br />
+                Estação mais Próxima: {ciclovia.closest_station_id}
+                <br />
+                Distância da estação mais próxima: {ciclovia.distance_to_closest_station_m} m
               </Popup>
             </Polyline>
           ))}
+
+        {/* Highlighted Station */}
+        {highlightedStation && (
+          <CircleMarker
+            center={[highlightedStation.coordinates[1], highlightedStation.coordinates[0]]}
+            radius={10}
+            color="red"
+          />
+        )}
+
+        {/* Line to Nearest Station */}
+        {highlightedLine && <Polyline positions={highlightedLine} color="red" />}
       </MapContainer>
 
-      {/* Control Panel for Toggling Layers */}
+      {/* Control Panel for Toggling Layers and Threshold */}
       <div
         style={{
           position: "absolute",
@@ -162,6 +234,18 @@ const Mapa = () => {
             Show Ciclovias
           </label>
         </div>
+        <form onSubmit={handleDistanceSubmit}>
+          <label>
+            Distance Threshold: 
+            <input
+              type="number"
+              value={distanceInput}
+              onChange={(e) => setDistanceInput(e.target.value)}
+              style={{ width: "60px", marginLeft: "10px" }}
+            />
+          </label>
+          <button type="submit" style={{ marginLeft: "10px" }}>Update</button>
+        </form>
       </div>
     </div>
   );
