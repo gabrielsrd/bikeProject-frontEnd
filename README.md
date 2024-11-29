@@ -9,9 +9,12 @@ Os dados são obtidos de uma API backend desenvolvida em Python, que realiza cá
 
 A aplicação é projetada para fornecer informações úteis a organizações, operadoras de bicicletas compartilhadas e gestores urbanos interessados em melhorar a infraestrutura cicloviária.  
 
+**Objetivo**:
+O projeto busca fornecer insights detalhados e acessíveis para empresas, organizações e gestores urbanos interessados em otimizar a infraestrutura cicloviária. Isso inclui a identificação de rotas mais utilizadas, áreas prioritárias para melhorias e análise de dados que podem auxiliar na tomada de decisões estratégicas.
 ---
 
 ## **Funcionalidades**
+<img src="public/capturaTela.png" width="100%" alt="capturatela">
 
 1. **Visualização Interativa**:  
    - Exibe ciclofaixas de São Paulo e localizações das estações de bicicletas compartilhadas.  
