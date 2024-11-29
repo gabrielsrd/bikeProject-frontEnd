@@ -7,6 +7,9 @@ import {
   Polyline,
   useMap,
   CircleMarker,
+  GeoJSON,
+ Circle,
+  Tooltip,
 } from "react-leaflet";
 import axios from "axios";
 import L from "leaflet";
@@ -38,13 +41,16 @@ const FetchGeoJsonOnMove = ({ onBoundsChange }) => {
 const Mapa = () => {
   const [stationsData, setStationsData] = useState([]); // Data for stations (points)
   const [cicloviasData, setCicloviasData] = useState([]); // Data for ciclovias (lines)
+  const [hotzonesData, setHotzonesData] = useState(null); // State for hotzones
   const [highlightedStation, setHighlightedStation] = useState(null); // Highlighted station
   const [highlightedLine, setHighlightedLine] = useState(null); // Line from ciclovia to station
   const [showStations, setShowStations] = useState(true); // Toggle visibility for stations
   const [showCiclovias, setShowCiclovias] = useState(true); // Toggle visibility for ciclovias
   const [distanceThreshold, setDistanceThreshold] = useState(1000); // Threshold for coloring
+  const [showHotzones, setShowHotzones] = useState(true); // Toggle for hotzones
+
   const [distanceInput, setDistanceInput] = useState(1000); // User's input for threshold
-  const position = [-23.533773, -46.625290]; // Map center coordinates
+  const position = [-23.5577, -46.7312]; // Map center coordinates
 
   // Fix default marker icon
   delete L.Icon.Default.prototype._getIconUrl;
@@ -89,22 +95,18 @@ const Mapa = () => {
       .catch((error) => {
         console.error("Error fetching ciclovias data:", error);
       });
+
+      axios
+      .get("http://127.0.0.1:8000/api/hotzones/")
+      .then((response) => {
+        setHotzonesData(response.data); // Store GeoJSON data
+      })
+      .catch((error) => {
+        console.error("Error fetching hotzones data:", error);
+      });
   }, []);
 
-  const handleCicloviaClick = (ciclovia) => {
-    console.log(ciclovia);
-    const nearestStation = stationsData.find(
-      (station) => station.id === ciclovia.closest_station_id
-    );
-
-    if (nearestStation) {
-      setHighlightedStation(nearestStation); // Highlight the station
-      setHighlightedLine([
-        [nearestStation.coordinates[1], nearestStation.coordinates[0]], // Lat, Lng
-        [ciclovia.coordinates[0][1], ciclovia.coordinates[0][0]], // Start of the ciclovia
-      ]);
-    }
-  };
+  
 
   const handleDistanceSubmit = (e) => {
     e.preventDefault(); // Prevent page reload
@@ -139,6 +141,21 @@ const Mapa = () => {
   }, [stationsData]);
 
   const polylines = useMemo(() => {
+    const handleCicloviaClick = (ciclovia) => {
+      console.log(ciclovia);
+      const nearestStation = stationsData.find(
+        (station) => station.id === ciclovia.closest_station_id
+      );
+  
+      if (nearestStation) {
+        setHighlightedStation(nearestStation); // Highlight the station
+        setHighlightedLine([
+          [nearestStation.coordinates[1], nearestStation.coordinates[0]], // Lat, Lng
+          [ciclovia.coordinates[0][1], ciclovia.coordinates[0][0]], // Start of the ciclovia
+        ]);
+      }
+    };  
+
     return cicloviasData.map((ciclovia) => (
       <Polyline
         key={ciclovia.id}
@@ -170,19 +187,32 @@ const Mapa = () => {
         </Popup>
       </Polyline>
     ));
-  }, [cicloviasData, distanceThreshold]);
+  }, [cicloviasData, distanceThreshold, stationsData]);
 
   return (
     <div style={{ position: "relative" }}>
       <MapContainer
         center={position}
-        zoom={13}
+        zoom={14}
         style={{ height: "100vh", width: "100%" }}
       >
+      
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution="&copy; OpenStreetMap contributors"
         />
+        <Circle 
+          center={position} // Set center of the circle to Cidade Universitária USP
+          radius={1200}    // Set the radius in meters
+          color="orange"       // Set the border color of the circle
+          weight={2}         // Set the thickness of the circle border
+          fillColor="yellow"   // Set the fill color of the circle
+          fillOpacity={0.2}  // Set the opacity of the fill color
+        >
+          <Tooltip >
+            Cidade Universitária USP
+          </Tooltip>
+          </Circle>
         <FetchGeoJsonOnMove onBoundsChange={loadFeatures} />
 
         {/* Render Markers for Stations */}
@@ -190,6 +220,21 @@ const Mapa = () => {
 
         {/* Render Polylines for Ciclovias */}
         {showCiclovias && polylines}
+
+        {/* Render Hotzones */}
+        {showHotzones && hotzonesData && (
+          <GeoJSON
+            data={hotzonesData}
+            style={{
+              color: "purple",
+              weight: 2,
+              fillColor: "purple",
+              fillOpacity: 0.5,
+            }}
+          >
+            <Tooltip>Hotzone</Tooltip>
+          </GeoJSON>
+        )}
 
         {/* Highlighted Station */}
         {highlightedStation && (
@@ -202,6 +247,7 @@ const Mapa = () => {
 
         {/* Line to Nearest Station */}
         {highlightedLine && <Polyline positions={highlightedLine} color="red" />}
+        
       </MapContainer>
 
       {/* Control Panel for Toggling Layers and Threshold */}
@@ -235,6 +281,16 @@ const Mapa = () => {
               onChange={(e) => setShowCiclovias(e.target.checked)}
             />
             Show Ciclovias
+          </label>
+        </div>
+        <div>
+          <label>
+            <input
+              type="checkbox"
+              checked={showHotzones}
+              onChange={(e) => setShowHotzones(e.target.checked)}
+            />
+            Show Hotzones
           </label>
         </div>
         <form onSubmit={handleDistanceSubmit}>

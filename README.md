@@ -1,89 +1,89 @@
-### README
 
-## Projeto (Português)
 
-**Título**: Aplicação Web para Análise de Ciclofaixas e Estações de Bicicletas Compartilhadas em São Paulo
+# Aplicação Web para Análise de Ciclofaixas e Estações de Bicicletas em São Paulo
 
-**Descrição**: Este projeto faz parte do Trabalho de Conclusão de Curso (TCC) em Ciência da Computação e consiste em uma aplicação web interativa desenvolvida em React. A página exibe um mapa da cidade de São Paulo, com informações sobre as ciclofaixas (faixas dedicadas para bicicletas) e as estações de bicicletas compartilhadas fornecidas pela Tembici. 
+**Descrição**:  
+Esta aplicação web interativa, desenvolvida em React, faz parte de um Trabalho de Conclusão de Curso (TCC) em Ciência da Computação. O projeto fornece uma visualização detalhada da infraestrutura cicloviária de São Paulo, incluindo ciclofaixas, estações de bicicletas compartilhadas e zonas de alta demanda de viagens (hotzones).  
 
-Os usuários podem aplicar filtros no mapa para visualizar:
-- Ciclofaixas existentes
-- Localização das estações de bicicletas Tembici
-- Zonas da cidade que necessitam de mais ciclofaixas ou melhorias na infraestrutura cicloviária
+Os dados são obtidos de uma API backend desenvolvida em Python, que realiza cálculos geográficos e serve os resultados em formato GeoJSON.  
 
-Além disso, a aplicação exibe dados de usuários de bicicletas, incluindo as rotas mais utilizadas. Este sistema é voltado para:
-1. Organizações e empresas que desejam entender e melhorar a infraestrutura cicloviária urbana.
-2. Operadoras de bicicletas compartilhadas, que podem usar os dados para otimizar suas operações.
-
-A aplicação obtém os dados em formato GeoJSON de uma API desenvolvida em Python, localizada em outro repositório, que realiza cálculos e processa informações para fornecer os dados geográficos.
-
-**Funcionalidades**:
-- **Mapeamento Interativo**: permite a navegação pelo mapa de São Paulo.
-- **Filtros**: exibe ciclofaixas, estações de bicicletas e áreas que precisam de infraestrutura adicional.
-- **Análise de Dados**: visualização de dados sobre uso de bicicletas, rotas percorridas e insights para melhorias.
-
-**Tecnologias Utilizadas**:
-- **Frontend**: React, JavaScript
-- **Backend**: API em Python (para processamento de dados e geração de GeoJSON)
-- **Mapas**: integração com serviços de mapas para renderização e visualização
-
-**Como Executar o Projeto**:
-1. Clone o repositório:
-   ```bash
-   git clone https://github.com/seuusuario/nomerepositorio.git
-   ```
-2. Instale as dependências:
-   ```bash
-   cd nomerepositorio
-   npm install
-   ```
-3. Inicie a aplicação:
-   ```bash
-   npm start
-   ```
-4. Configure o backend (repositório Python) para fornecer os dados da API, e certifique-se de que o backend está em execução antes de carregar a página.
+A aplicação é projetada para fornecer informações úteis a organizações, operadoras de bicicletas compartilhadas e gestores urbanos interessados em melhorar a infraestrutura cicloviária.  
 
 ---
 
-## Project (English)
+## **Funcionalidades**
 
-**Title**: Web Application for Analyzing Bike Lanes and Shared Bike Stations in São Paulo
+1. **Visualização Interativa**:  
+   - Exibe ciclofaixas de São Paulo e localizações das estações de bicicletas compartilhadas.  
 
-**Description**: This project is part of the undergraduate thesis in Computer Science, featuring an interactive web application built with React. The webpage displays a map of São Paulo, including information on bike lanes and shared bike stations provided by Tembici.
+2. **Filtros Personalizáveis**:  
+   - Filtrar ciclofaixas sem uma estação de bicicleta próxima (com intervalo configurável pelo usuário).  
+   - Exibir hotzones com alta densidade de viagens.  
 
-Users can apply filters on the map to visualize:
-- Existing bike lanes
-- Locations of Tembici bike-sharing stations
-- Zones in need of more bike lanes or infrastructure improvements
+3. **Dados de Viagem e Rotas Mais Frequentes**:  
+   - Destacar rotas mais utilizadas pelos usuários.  
 
-Additionally, the app shows data on bike users and the routes they frequent. This system is designed for:
-1. Organizations and businesses looking to improve urban cycling infrastructure.
-2. Shared bike providers aiming to optimize their services based on usage insights.
+4. **Interatividade no Mapa**:  
+   - Ao clicar em uma ciclofaixa: mostra a estação mais próxima.  
+   - Ao clicar em uma estação: exibe para quais estações a maioria das viagens se destina.  
 
-The application retrieves data in GeoJSON format from a Python-based API (located in a separate repository), which performs calculations and processes information to provide geographical data.
+5. **Futuras Melhorias Planejadas**:  
+   - Melhoria no design da página para uma experiência de usuário aprimorada.  
+   - Possibilidade de upload de arquivos GeoJSON personalizados para análise.  
 
-**Features**:
-- **Interactive Map**: enables navigation through São Paulo’s map.
-- **Filters**: displays bike lanes, bike-sharing stations, and areas needing additional infrastructure.
-- **Data Analysis**: provides visualizations of bike usage data, frequently used routes, and actionable insights.
+---
 
-**Technologies Used**:
-- **Frontend**: React, JavaScript
-- **Backend**: Python API (for data processing and GeoJSON generation)
-- **Maps**: integration with mapping services for rendering and visualization
+## **Tecnologias Utilizadas**
 
-**How to Run the Project**:
-1. Clone the repository:
+- **Frontend**: React, JavaScript  
+- **Backend**: Django API (separado, disponível em outro repositório)  
+- **Mapas**: Leaflet, Mapbox ou Folium para renderização interativa  
+
+---
+
+## **Como Executar o Projeto**
+
+1. **Instale as dependências**:  
    ```bash
-   git clone https://github.com/yourusername/repositoryname.git
-   ```
-2. Install dependencies:
-   ```bash
-   cd repositoryname
    npm install
    ```
-3. Start the application:
+
+2. **Configure o ambiente**:  
+   Certifique-se de que a API backend está em execução e configurada corretamente.  
+
+3. **Inicie o projeto**:  
    ```bash
    npm start
    ```
-4. Ensure the backend (Python repository) is configured to serve the API data and is running before loading the frontend page.
+
+4. **Acesse a aplicação**:  
+   Abra o navegador e acesse `http://localhost:3000`.  
+
+---
+
+## **Fluxo de Dados**
+
+1. **API Backend**:  
+   Fornece os dados no formato GeoJSON por meio de três endpoints:  
+   - Ciclofaixas: `/api/ciclovias/`  
+   - Estações: `/api/estacoes/`  
+   - Hotzones: `/api/hotzones/`  
+
+2. **Frontend**:  
+   - Consome os dados da API para exibição interativa no mapa.  
+   - Implementa filtros e cálculos adicionais baseados nas configurações do usuário.  
+
+
+
+## **Próximos Passos**
+
+1. **Design e UX**:  
+   Planejamos aprimorar o design geral da aplicação, com foco na usabilidade e responsividade.  
+
+2. **Funcionalidades Avançadas**:  
+   Implementar a opção de upload de arquivos personalizados para análise.  
+
+3. **Integração com Mapas Avançados**:  
+   Explorar serviços como Mapbox para visualizações mais dinâmicas e detalhadas.  
+
+---
