@@ -89,4 +89,7 @@ O projeto busca fornecer insights detalhados e acessíveis para empresas, organi
 3. **Integração com Mapas Avançados**:  
    Explorar serviços como Mapbox para visualizações mais dinâmicas e detalhadas.  
 
+## **BackEnd**
+Link para o repositório backEnd: https://github.com/gabrielsrd/bikeProject-backEnd 
+ 
 ---
