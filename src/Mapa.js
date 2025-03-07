@@ -8,51 +8,59 @@ import {
   useMap,
   CircleMarker,
   GeoJSON,
- Circle,
-  Tooltip,
+  Circle,
+  Tooltip as LeafletTooltip,
 } from "react-leaflet";
 import axios from "axios";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from "chart.js";
+import { Bar } from "react-chartjs-2";
+import { Modal, Button } from "react-bootstrap";
+import "bootstrap/dist/css/bootstrap.min.css";
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 const FetchGeoJsonOnMove = ({ onBoundsChange }) => {
   const map = useMap();
 
   useEffect(() => {
     const handleBoundsChange = () => {
-      const bounds = map.getBounds(); // Get current map bounds
+      const bounds = map.getBounds();
       const bbox = {
         southwest: bounds.getSouthWest(),
         northeast: bounds.getNorthEast(),
       };
-      onBoundsChange(bbox); // Pass bounding box to parent
+      onBoundsChange(bbox);
     };
 
-    map.on("moveend", handleBoundsChange); // Trigger on map move
+    map.on("moveend", handleBoundsChange);
 
     return () => {
-      map.off("moveend", handleBoundsChange); // Cleanup
+      map.off("moveend", handleBoundsChange);
     };
   }, [map, onBoundsChange]);
 
-  return null; // No UI for this component
+  return null;
 };
 
 const Mapa = () => {
-  const [stationsData, setStationsData] = useState([]); // Data for stations (points)
-  const [cicloviasData, setCicloviasData] = useState([]); // Data for ciclovias (lines)
-  const [hotzonesData, setHotzonesData] = useState(null); // State for hotzones
-  const [highlightedStation, setHighlightedStation] = useState(null); // Highlighted station
-  const [highlightedLine, setHighlightedLine] = useState(null); // Line from ciclovia to station
-  const [showStations, setShowStations] = useState(true); // Toggle visibility for stations
-  const [showCiclovias, setShowCiclovias] = useState(true); // Toggle visibility for ciclovias
-  const [distanceThreshold, setDistanceThreshold] = useState(1000); // Threshold for coloring
-  const [showHotzones, setShowHotzones] = useState(true); // Toggle for hotzones
+  const [stationsData, setStationsData] = useState([]);
+  const [cicloviasData, setCicloviasData] = useState([]);
+  const [hotzonesData, setHotzonesData] = useState(null);
+  const [histogramData, setHistogramData] = useState([]);
+  const [perimetroData, setPerimetroData] = useState(null); // Novo estado para o perímetro
+  const [highlightedStation, setHighlightedStation] = useState(null);
+  const [highlightedLine, setHighlightedLine] = useState(null);
+  const [showStations, setShowStations] = useState(true);
+  const [showCiclovias, setShowCiclovias] = useState(true);
+  const [distanceThreshold, setDistanceThreshold] = useState(1000);
+  const [showHotzones, setShowHotzones] = useState(true);
+  const [distanceInput, setDistanceInput] = useState(1000);
+  const [showHistogramModal, setShowHistogramModal] = useState(false);
+  const [selectedStation, setSelectedStation] = useState(null);
+  const position = [-23.5577, -46.7312];
 
-  const [distanceInput, setDistanceInput] = useState(1000); // User's input for threshold
-  const position = [-23.5577, -46.7312]; // Map center coordinates
-
-  // Fix default marker icon
   delete L.Icon.Default.prototype._getIconUrl;
   L.Icon.Default.mergeOptions({
     iconRetinaUrl: require("leaflet/dist/images/marker-icon-2x.png"),
@@ -61,7 +69,7 @@ const Mapa = () => {
   });
 
   useEffect(() => {
-    // Fetch GeoJSON data for stations
+    // Fetch ciclostations
     axios
       .get("http://127.0.0.1:8000/api/ciclostation/")
       .then((response) => {
@@ -72,11 +80,9 @@ const Mapa = () => {
         }));
         setStationsData(features);
       })
-      .catch((error) => {
-        console.error("Error fetching station data:", error);
-      });
+      .catch((error) => console.error("Error fetching station data:", error));
 
-    // Fetch GeoJSON data for ciclovias
+    // Fetch ciclovias
     axios
       .get("http://127.0.0.1:8000/api/ciclovias/")
       .then((response) => {
@@ -92,39 +98,86 @@ const Mapa = () => {
         }));
         setCicloviasData(features);
       })
-      .catch((error) => {
-        console.error("Error fetching ciclovias data:", error);
-      });
+      .catch((error) => console.error("Error fetching ciclovias data:", error));
 
-      axios
+    // Fetch hotzones
+    axios
       .get("http://127.0.0.1:8000/api/hotzones/")
-      .then((response) => {
-        setHotzonesData(response.data); // Store GeoJSON data
-      })
-      .catch((error) => {
-        console.error("Error fetching hotzones data:", error);
-      });
+      .then((response) => setHotzonesData(response.data))
+      .catch((error) => console.error("Error fetching hotzones data:", error));
+
+    // Fetch histogram data
+    axios
+      .get("http://127.0.0.1:8000/api/station_histogram/")
+      .then((response) => setHistogramData(response.data))
+      .catch((error) => console.error("Error fetching histogram data:", error));
+
+    // Fetch perimetro-campus.geojson
+    fetch("/perimetro-campus.geojson")
+      .then((response) => response.json())
+      .then((data) => setPerimetroData(data))
+      .catch((error) => console.error("Error fetching perimetro-campus.geojson:", error));
   }, []);
 
-  
-
   const handleDistanceSubmit = (e) => {
-    e.preventDefault(); // Prevent page reload
-    setShowCiclovias(false); // Ensure ciclovias are visible
-    console.log(`Updating threshold to: ${distanceInput}`);
-    setDistanceThreshold(Number(distanceInput)); // Update threshold
+    e.preventDefault();
+    setShowCiclovias(false);
+    setDistanceThreshold(Number(distanceInput));
   };
 
   useEffect(() => {
-    setShowCiclovias(true); // Re-enable ciclovias
+    setShowCiclovias(true);
   }, [distanceThreshold]);
 
   const loadFeatures = (bbox) => {
     console.log("Map moved, new bounds:", bbox);
-    // Optionally, filter data based on bbox if needed
   };
 
-  // Create markers and polylines outside JSX
+  const getStationHistogramChart = (stationId) => {
+    const stationData = histogramData.filter((data) => data.station_id === stationId);
+    const hourlyData = {};
+
+    stationData.forEach((data) => {
+      const hour = data.hour;
+      if (!hourlyData[hour]) {
+        hourlyData[hour] = { departures: 0, arrivals: 0, count: 0 };
+      }
+      hourlyData[hour].departures += data.departures;
+      hourlyData[hour].arrivals += data.arrivals;
+      hourlyData[hour].count += 1;
+    });
+
+    const labels = [];
+    const departures = [];
+    const arrivals = [];
+    for (let hour = 0; hour < 24; hour++) {
+      labels.push(hour);
+      departures.push(hourlyData[hour] ? hourlyData[hour].departures / hourlyData[hour].count : 0);
+      arrivals.push(hourlyData[hour] ? hourlyData[hour].arrivals / hourlyData[hour].count : 0);
+    }
+
+    return {
+      labels,
+      datasets: [
+        {
+          label: "Departures",
+          data: departures,
+          backgroundColor: "rgba(75, 192, 192, 0.6)",
+        },
+        {
+          label: "Arrivals",
+          data: arrivals,
+          backgroundColor: "rgba(255, 99, 132, 0.6)",
+        },
+      ],
+    };
+  };
+
+  const handleHistogramClick = (station) => {
+    setSelectedStation(station);
+    setShowHistogramModal(true);
+  };
+
   const markers = useMemo(() => {
     return stationsData.map((station) => (
       <Marker
@@ -135,55 +188,68 @@ const Mapa = () => {
           <strong>{station.name}</strong>
           <br />
           ID: {station.id}
+          <br />
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => handleHistogramClick(station)}
+            style={{ marginTop: "10px" }}
+          >
+            Ver Histograma Completo
+          </Button>
+          {histogramData.length > 0 && (
+            <div style={{ width: "300px", height: "200px", marginTop: "10px" }}>
+              <Bar
+                data={getStationHistogramChart(station.id)}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: { position: "top" },
+                    title: { display: false },
+                  },
+                }}
+              />
+            </div>
+          )}
         </Popup>
       </Marker>
     ));
-  }, [stationsData]);
+  }, [stationsData, histogramData]);
 
   const polylines = useMemo(() => {
     const handleCicloviaClick = (ciclovia) => {
-      console.log(ciclovia);
       const nearestStation = stationsData.find(
         (station) => station.id === ciclovia.closest_station_id
       );
-  
       if (nearestStation) {
-        setHighlightedStation(nearestStation); // Highlight the station
+        setHighlightedStation(nearestStation);
         setHighlightedLine([
-          [nearestStation.coordinates[1], nearestStation.coordinates[0]], // Lat, Lng
-          [ciclovia.coordinates[0][1], ciclovia.coordinates[0][0]], // Start of the ciclovia
+          [nearestStation.coordinates[1], nearestStation.coordinates[0]],
+          [ciclovia.coordinates[0][1], ciclovia.coordinates[0][0]],
         ]);
       }
-    };  
+    };
 
     return cicloviasData.map((ciclovia) => (
       <Polyline
         key={ciclovia.id}
         positions={ciclovia.coordinates.map((coord) => [coord[1], coord[0]])}
-        color={
-          ciclovia.distance_to_closest_station_m > distanceThreshold
-            ? "red"
-            : "blue"
-        }
-        eventHandlers={{
-          click: () => {
-            console.log(`Clicked on Ciclovia: ${ciclovia.programa}`);
-            handleCicloviaClick(ciclovia); // Call the click handler
-          },
-        }}
+        color={ciclovia.distance_to_closest_station_m > distanceThreshold ? "red" : "blue"}
+        eventHandlers={{ click: () => handleCicloviaClick(ciclovia) }}
       >
         <Popup>
           <strong>{ciclovia.programa}</strong>
           <br />
-          Inauguração: {ciclovia.inauguracao}
+          Inauguration: {ciclovia.inauguracao}
           <br />
-          Extensão Total: {ciclovia.extensao_t} m
+          Total Length: {ciclovia.extensao_t} m
           <br />
-          Extensão Ciclovia: {ciclovia.extensao_c} m
+          Ciclovia Length: {ciclovia.extensao_c} m
           <br />
-          Estação mais Próxima: {ciclovia.closest_station_id}
+          Nearest Station: {ciclovia.closest_station_id}
           <br />
-          Distância da estação mais próxima: {ciclovia.distance_to_closest_station_m} m
+          Distance to Nearest Station: {ciclovia.distance_to_closest_station_m} m
         </Popup>
       </Polyline>
     ));
@@ -196,32 +262,30 @@ const Mapa = () => {
         zoom={14}
         style={{ height: "100vh", width: "100%" }}
       >
-      
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution="&copy; OpenStreetMap contributors"
+          attribution="© OpenStreetMap contributors"
         />
-        <Circle 
-          center={position} // Set center of the circle to Cidade Universitária USP
-          radius={1200}    // Set the radius in meters
-          color="orange"       // Set the border color of the circle
-          weight={2}         // Set the thickness of the circle border
-          fillColor="yellow"   // Set the fill color of the circle
-          fillOpacity={0.2}  // Set the opacity of the fill color
-        >
-          <Tooltip >
-            Cidade Universitária USP
-          </Tooltip>
-          </Circle>
         <FetchGeoJsonOnMove onBoundsChange={loadFeatures} />
 
-        {/* Render Markers for Stations */}
-        {showStations && markers}
+        {/* Camada do perímetro do campus */}
+        {perimetroData && (
+          <GeoJSON
+            data={perimetroData}
+            style={() => ({
+              color: "green",
+              weight: 2,
+              fillColor: "green",
+              fillOpacity: 0.2,
+            })}
+          >
+            <LeafletTooltip>Perímetro do Campus</LeafletTooltip>
+          </GeoJSON>
+        )}
 
-        {/* Render Polylines for Ciclovias */}
+        {showStations && markers}
         {showCiclovias && polylines}
 
-        {/* Render Hotzones */}
         {showHotzones && hotzonesData && (
           <GeoJSON
             data={hotzonesData}
@@ -232,11 +296,10 @@ const Mapa = () => {
               fillOpacity: 0.5,
             }}
           >
-            <Tooltip>Hotzone</Tooltip>
+            <LeafletTooltip>Hotzone</LeafletTooltip>
           </GeoJSON>
         )}
 
-        {/* Highlighted Station */}
         {highlightedStation && (
           <CircleMarker
             center={[highlightedStation.coordinates[1], highlightedStation.coordinates[0]]}
@@ -245,12 +308,10 @@ const Mapa = () => {
           />
         )}
 
-        {/* Line to Nearest Station */}
         {highlightedLine && <Polyline positions={highlightedLine} color="red" />}
-        
       </MapContainer>
 
-      {/* Control Panel for Toggling Layers and Threshold */}
+      {/* Control Panel */}
       <div
         style={{
           position: "absolute",
@@ -260,7 +321,7 @@ const Mapa = () => {
           padding: "10px 15px",
           borderRadius: "8px",
           boxShadow: "0 2px 5px rgba(0,0,0,0.3)",
-          zIndex: 1000,
+          zIndex: 1001,
         }}
       >
         <div>
@@ -295,7 +356,7 @@ const Mapa = () => {
         </div>
         <form onSubmit={handleDistanceSubmit}>
           <label>
-            Distance Threshold: 
+            Distance Threshold:
             <input
               type="number"
               value={distanceInput}
@@ -306,6 +367,42 @@ const Mapa = () => {
           <button type="submit" style={{ marginLeft: "10px" }}>Update</button>
         </form>
       </div>
+
+      {/* Histogram Modal */}
+      <Modal
+        show={showHistogramModal}
+        onHide={() => setShowHistogramModal(false)}
+        size="lg"
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Histograma Detalhado - {selectedStation?.name}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {selectedStation && histogramData.length > 0 && (
+            <div style={{ width: "100%", height: "400px" }}>
+              <Bar
+                data={getStationHistogramChart(selectedStation.id)}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: { position: "top" },
+                    title: {
+                      display: true,
+                      text: "Média de Partidas e Chegadas por Hora",
+                    },
+                  },
+                  scales: {
+                    x: { title: { display: true, text: "Hora do Dia" } },
+                    y: { title: { display: true, text: "Quantidade" } },
+                  },
+                }}
+              />
+            </div>
+          )}
+        </Modal.Body>
+      </Modal>
     </div>
   );
 };
