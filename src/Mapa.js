@@ -49,7 +49,7 @@ const Mapa = () => {
   const [cicloviasData, setCicloviasData] = useState([]);
   const [hotzonesData, setHotzonesData] = useState(null);
   const [histogramData, setHistogramData] = useState([]);
-  const [perimetroData, setPerimetroData] = useState(null); // Novo estado para o perímetro
+  const [perimetroData, setPerimetroData] = useState(null);
   const [highlightedStation, setHighlightedStation] = useState(null);
   const [highlightedLine, setHighlightedLine] = useState(null);
   const [showStations, setShowStations] = useState(true);
@@ -59,7 +59,16 @@ const Mapa = () => {
   const [distanceInput, setDistanceInput] = useState(1000);
   const [showHistogramModal, setShowHistogramModal] = useState(false);
   const [selectedStation, setSelectedStation] = useState(null);
+  const [selectedDays, setSelectedDays] = useState([]);
+  const [excludeMonths, setExcludeMonths] = useState([]);
+  const [selectedStationId, setSelectedStationId] = useState(null);
+  const [uspFilter, setUspFilter] = useState(false);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const position = [-23.5577, -46.7312];
+
+  const daysOfWeek = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
+  const months = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
   delete L.Icon.Default.prototype._getIconUrl;
   L.Icon.Default.mergeOptions({
@@ -69,7 +78,6 @@ const Mapa = () => {
   });
 
   useEffect(() => {
-    // Fetch ciclostations
     axios
       .get("http://127.0.0.1:8000/api/ciclostation/")
       .then((response) => {
@@ -80,9 +88,8 @@ const Mapa = () => {
         }));
         setStationsData(features);
       })
-      .catch((error) => console.error("Error fetching station data:", error));
+      .catch((error) => console.error("Erro ao buscar dados das estações:", error));
 
-    // Fetch ciclovias
     axios
       .get("http://127.0.0.1:8000/api/ciclovias/")
       .then((response) => {
@@ -98,26 +105,37 @@ const Mapa = () => {
         }));
         setCicloviasData(features);
       })
-      .catch((error) => console.error("Error fetching ciclovias data:", error));
+      .catch((error) => console.error("Erro ao buscar dados das ciclovias:", error));
 
-    // Fetch hotzones
     axios
       .get("http://127.0.0.1:8000/api/hotzones/")
       .then((response) => setHotzonesData(response.data))
-      .catch((error) => console.error("Error fetching hotzones data:", error));
+      .catch((error) => console.error("Erro ao buscar dados das zonas quentes:", error));
 
-    // Fetch histogram data
-    axios
-      .get("http://127.0.0.1:8000/api/station_histogram/")
-      .then((response) => setHistogramData(response.data))
-      .catch((error) => console.error("Error fetching histogram data:", error));
-
-    // Fetch perimetro-campus.geojson
     fetch("/perimetro-campus.geojson")
       .then((response) => response.json())
       .then((data) => setPerimetroData(data))
-      .catch((error) => console.error("Error fetching perimetro-campus.geojson:", error));
+      .catch((error) => console.error("Erro ao buscar perimetro-campus.geojson:", error));
   }, []);
+
+  useEffect(() => {
+    const fetchHistogramData = async () => {
+      try {
+        const params = {};
+        if (selectedDays.length > 0) params.days = selectedDays.join(",");
+        if (excludeMonths.length > 0) params.months = excludeMonths.join(",");
+        if (selectedStationId) params.station_id = selectedStationId;
+        if (uspFilter) params.usp = true;
+        if (startDate) params.start_date = startDate;
+        if (endDate) params.end_date = endDate;
+        const response = await axios.get("http://127.0.0.1:8000/api/station_histogram/", { params });
+        setHistogramData(response.data);
+      } catch (error) {
+        console.error("Erro ao buscar dados do histograma:", error);
+      }
+    };
+    fetchHistogramData();
+  }, [selectedDays, excludeMonths, selectedStationId, uspFilter, startDate, endDate]);
 
   const handleDistanceSubmit = (e) => {
     e.preventDefault();
@@ -130,7 +148,7 @@ const Mapa = () => {
   }, [distanceThreshold]);
 
   const loadFeatures = (bbox) => {
-    console.log("Map moved, new bounds:", bbox);
+    console.log("Mapa movido, novas bordas:", bbox);
   };
 
   const getStationHistogramChart = (stationId) => {
@@ -159,31 +177,33 @@ const Mapa = () => {
     return {
       labels,
       datasets: [
-        {
-          label: "Departures",
-          data: departures,
-          backgroundColor: "rgba(75, 192, 192, 0.6)",
-        },
-        {
-          label: "Arrivals",
-          data: arrivals,
-          backgroundColor: "rgba(255, 99, 132, 0.6)",
-        },
+        { label: "Partidas", data: departures, backgroundColor: "rgba(75, 192, 192, 0.6)" },
+        { label: "Chegadas", data: arrivals, backgroundColor: "rgba(255, 99, 132, 0.6)" },
       ],
     };
   };
 
   const handleHistogramClick = (station) => {
     setSelectedStation(station);
+    setSelectedStationId(station.id);
     setShowHistogramModal(true);
+  };
+
+  const handleDayChange = (dayIndex) => {
+    setSelectedDays((prev) =>
+      prev.includes(dayIndex) ? prev.filter((d) => d !== dayIndex) : [...prev, dayIndex]
+    );
+  };
+
+  const handleMonthChange = (monthIndex) => {
+    setExcludeMonths((prev) =>
+      prev.includes(monthIndex + 1) ? prev.filter((m) => m !== (monthIndex + 1)) : [...prev, monthIndex + 1]
+    );
   };
 
   const markers = useMemo(() => {
     return stationsData.map((station) => (
-      <Marker
-        key={station.id}
-        position={[station.coordinates[1], station.coordinates[0]]}
-      >
+      <Marker key={station.id} position={[station.coordinates[1], station.coordinates[0]]}>
         <Popup>
           <strong>{station.name}</strong>
           <br />
@@ -204,10 +224,7 @@ const Mapa = () => {
                 options={{
                   responsive: true,
                   maintainAspectRatio: false,
-                  plugins: {
-                    legend: { position: "top" },
-                    title: { display: false },
-                  },
+                  plugins: { legend: { position: "top" }, title: { display: false } },
                 }}
               />
             </div>
@@ -241,15 +258,15 @@ const Mapa = () => {
         <Popup>
           <strong>{ciclovia.programa}</strong>
           <br />
-          Inauguration: {ciclovia.inauguracao}
+          Inauguração: {ciclovia.inauguracao}
           <br />
-          Total Length: {ciclovia.extensao_t} m
+          Comprimento Total: {ciclovia.extensao_t} m
           <br />
-          Ciclovia Length: {ciclovia.extensao_c} m
+          Comprimento Ciclovia: {ciclovia.extensao_c} m
           <br />
-          Nearest Station: {ciclovia.closest_station_id}
+          Estação Mais Próxima: {ciclovia.closest_station_id}
           <br />
-          Distance to Nearest Station: {ciclovia.distance_to_closest_station_m} m
+          Distância à Estação Mais Próxima: {ciclovia.distance_to_closest_station_m} m
         </Popup>
       </Polyline>
     ));
@@ -257,49 +274,30 @@ const Mapa = () => {
 
   return (
     <div style={{ position: "relative" }}>
-      <MapContainer
-        center={position}
-        zoom={14}
-        style={{ height: "100vh", width: "100%" }}
-      >
+      <MapContainer center={position} zoom={14} style={{ height: "100vh", width: "100%" }}>
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution="© OpenStreetMap contributors"
         />
         <FetchGeoJsonOnMove onBoundsChange={loadFeatures} />
-
-        {/* Camada do perímetro do campus */}
         {perimetroData && (
           <GeoJSON
             data={perimetroData}
-            style={() => ({
-              color: "green",
-              weight: 2,
-              fillColor: "green",
-              fillOpacity: 0.2,
-            })}
+            style={() => ({ color: "green", weight: 2, fillColor: "green", fillOpacity: 0.2 })}
           >
             <LeafletTooltip>Perímetro do Campus</LeafletTooltip>
           </GeoJSON>
         )}
-
         {showStations && markers}
         {showCiclovias && polylines}
-
         {showHotzones && hotzonesData && (
           <GeoJSON
             data={hotzonesData}
-            style={{
-              color: "purple",
-              weight: 2,
-              fillColor: "purple",
-              fillOpacity: 0.5,
-            }}
+            style={{ color: "purple", weight: 2, fillColor: "purple", fillOpacity: 0.5 }}
           >
-            <LeafletTooltip>Hotzone</LeafletTooltip>
+            <LeafletTooltip>Zona Quente</LeafletTooltip>
           </GeoJSON>
         )}
-
         {highlightedStation && (
           <CircleMarker
             center={[highlightedStation.coordinates[1], highlightedStation.coordinates[0]]}
@@ -307,11 +305,9 @@ const Mapa = () => {
             color="red"
           />
         )}
-
         {highlightedLine && <Polyline positions={highlightedLine} color="red" />}
       </MapContainer>
 
-      {/* Control Panel */}
       <div
         style={{
           position: "absolute",
@@ -331,7 +327,7 @@ const Mapa = () => {
               checked={showStations}
               onChange={(e) => setShowStations(e.target.checked)}
             />
-            Show Ciclostations
+            Mostrar Ciclostations
           </label>
         </div>
         <div>
@@ -341,22 +337,22 @@ const Mapa = () => {
               checked={showCiclovias}
               onChange={(e) => setShowCiclovias(e.target.checked)}
             />
-            Show Ciclovias
+            Mostrar Ciclovias
           </label>
         </div>
-        <div>
+        {/* <div>
           <label>
             <input
               type="checkbox"
               checked={showHotzones}
               onChange={(e) => setShowHotzones(e.target.checked)}
             />
-            Show Hotzones
+            Mostrar Zonas Quentes
           </label>
-        </div>
-        <form onSubmit={handleDistanceSubmit}>
+        </div> */}
+        {/* <form onSubmit={handleDistanceSubmit}>
           <label>
-            Distance Threshold:
+            Limiar de Distância:
             <input
               type="number"
               value={distanceInput}
@@ -364,14 +360,77 @@ const Mapa = () => {
               style={{ width: "60px", marginLeft: "10px" }}
             />
           </label>
-          <button type="submit" style={{ marginLeft: "10px" }}>Update</button>
-        </form>
+          <button type="submit" style={{ marginLeft: "10px" }}>Atualizar</button>
+        </form> */}
+
+        <div style={{ marginTop: "10px" }}>
+          <label>Filtrar por Dias:</label>
+          <div>
+            {daysOfWeek.map((day, index) => (
+              <label key={index} style={{ marginRight: "10px" }}>
+                <input
+                  type="checkbox"
+                  checked={selectedDays.includes(index)}
+                  onChange={() => handleDayChange(index)}
+                />
+                {day}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ marginTop: "10px" }}>
+          <label>Excluir Meses:</label>
+          <div>
+            {months.map((month, index) => (
+              <label key={index} style={{ marginRight: "10px" }}>
+                <input
+                  type="checkbox"
+                  checked={excludeMonths.includes(index + 1)}
+                  onChange={() => handleMonthChange(index)}
+                />
+                {month}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ marginTop: "10px" }}>
+          <label>
+            <input
+              type="checkbox"
+              checked={uspFilter}
+              onChange={(e) => setUspFilter(e.target.checked)}
+            />
+            Estações USP (242-260)
+          </label>
+        </div>
+
+        <div style={{ marginTop: "10px" }}>
+          <label>Filtrar por Intervalo de Data:</label>
+          <div style={{ display: "flex", gap: "10px" }}>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              style={{ padding: "5px" }}
+            />
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              style={{ padding: "5px" }}
+            />
+          </div>
+        </div>
       </div>
 
-      {/* Histogram Modal */}
       <Modal
         show={showHistogramModal}
-        onHide={() => setShowHistogramModal(false)}
+        onHide={() => {
+          setShowHistogramModal(false);
+          setSelectedStationId(null);
+        }}
         size="lg"
         centered
       >
@@ -388,10 +447,7 @@ const Mapa = () => {
                   maintainAspectRatio: false,
                   plugins: {
                     legend: { position: "top" },
-                    title: {
-                      display: true,
-                      text: "Média de Partidas e Chegadas por Hora",
-                    },
+                    title: { display: true, text: "Média de Partidas e Chegadas por Hora" },
                   },
                   scales: {
                     x: { title: { display: true, text: "Hora do Dia" } },
