@@ -340,28 +340,6 @@ const Mapa = () => {
             Mostrar Ciclovias
           </label>
         </div>
-        {/* <div>
-          <label>
-            <input
-              type="checkbox"
-              checked={showHotzones}
-              onChange={(e) => setShowHotzones(e.target.checked)}
-            />
-            Mostrar Zonas Quentes
-          </label>
-        </div> */}
-        {/* <form onSubmit={handleDistanceSubmit}>
-          <label>
-            Limiar de Distância:
-            <input
-              type="number"
-              value={distanceInput}
-              onChange={(e) => setDistanceInput(e.target.value)}
-              style={{ width: "60px", marginLeft: "10px" }}
-            />
-          </label>
-          <button type="submit" style={{ marginLeft: "10px" }}>Atualizar</button>
-        </form> */}
 
         <div style={{ marginTop: "10px" }}>
           <label>Filtrar por Dias:</label>
