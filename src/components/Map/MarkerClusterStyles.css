@@ -1,0 +1,82 @@
+/* Custom marker clustering styles */
+.custom-marker-cluster {
+  background: transparent !important;
+  border: none !important;
+}
+
+.cluster-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: white;
+  font-weight: bold;
+  font-size: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  border: 2px solid white;
+  transition: all 0.2s ease;
+}
+
+.cluster-icon:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+.cluster-small {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #28a745, #20c997);
+  font-size: 11px;
+}
+
+.cluster-medium {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #ffc107, #fd7e14);
+  font-size: 13px;
+}
+
+.cluster-large {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #dc3545, #e83e8c);
+  font-size: 15px;
+}
+
+/* Leaflet popup optimizations */
+.leaflet-popup {
+  margin-bottom: 20px;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+  border: none;
+  overflow: hidden;
+  padding: 0;
+}
+
+.leaflet-popup-content {
+  margin: 0;
+  padding: 0;
+  width: auto !important;
+}
+
+.leaflet-popup-tip-container {
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+/* Loading states for charts */
+.chart-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 180px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.chart-loading .spinner-border {
+  width: 1.5rem;
+  height: 1.5rem;
+}
