@@ -151,12 +151,12 @@ export const StationPopupContent = ({ station, onHistogramClick, histogramData, 
             </div>
           )}
           
-          <div className="mt-2">
+          {/* <div className="mt-2">
             <small className="text-muted">
               <i className="fas fa-info-circle me-1"></i>
               Clique em "Ver Análise Completa" para detalhes
             </small>
-          </div>
+          </div> */}
         </div>
       )}
 

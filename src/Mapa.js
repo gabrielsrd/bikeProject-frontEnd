@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { MapContainer, TileLayer } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import "bootstrap/dist/css/bootstrap.min.css";
@@ -29,7 +29,7 @@ import {
 } from "./components";
 
 // Constants and utilities
-import { MAP_CONFIG, DAYS_OF_WEEK, MONTHS } from "./constants";
+import { MAP_CONFIG } from "./constants";
 import { configureLeafletMarkers, calculateHighlightLine } from "./utils";
 
 const Mapa = () => {
@@ -42,12 +42,18 @@ const Mapa = () => {
   const [showHotzones] = useState(true);
   const [showHistogramModal, setShowHistogramModal] = useState(false);
   const [selectedStation, setSelectedStation] = useState(null);
-  const [selectedDays, setSelectedDays] = useState([]);
-  const [excludeMonths, setExcludeMonths] = useState([]);
-  const [selectedStationId, setSelectedStationId] = useState(null);
-  const [uspFilter, setUspFilter] = useState(true); // Default to true for USP stations
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  
+  // Map display filters (for stations/ciclovias visibility)
+  const [uspMapFilter, setUspMapFilter] = useState(true); // Default to true for USP stations on map
+  
+  // Histogram analysis filters (separate from map display)
+  const [histogramFilters, setHistogramFilters] = useState({
+    selectedDays: [0, 1, 2, 3, 4], // Default weekdays for analysis
+    excludeMonths: [],
+    startDate: "",
+    endDate: "",
+    selectedStationId: null
+  });
 
   // Data fetching with custom hooks
   const { stations, loading: stationsLoading, error: stationsError } = useStations();
@@ -55,14 +61,7 @@ const Mapa = () => {
   const { hotzones, loading: hotzonesLoading, error: hotzonesError } = useHotzones();
   const { perimetro, loading: perimetroLoading, error: perimetroError } = usePerimetro();
   
-  const histogramFilters = {
-    selectedDays,
-    excludeMonths,
-    selectedStationId,
-    uspFilter,
-    startDate,
-    endDate,
-  };
+  // Use histogram filters directly for histogram data
   const { histogramData } = useHistogram(histogramFilters);
 
   // Calculate loading state
@@ -74,21 +73,29 @@ const Mapa = () => {
     configureLeafletMarkers();
   }, []);
 
-  // Event handlers
-  const loadFeatures = (bbox) => {
-    console.log("Mapa movido, novas bordas:", bbox);
-  };
+  // Event handlers - memoized to prevent unnecessary re-renders
+  const loadFeatures = useCallback((bbox) => {
+    // Future feature: Load features based on map bounds
+    // Currently not implemented to avoid unnecessary API calls
+  }, []);
 
-  const handleHistogramClick = (station) => {
+  const handleHistogramClick = useCallback((station) => {
     setSelectedStation(station);
-    setSelectedStationId(station.id);
+    setHistogramFilters(prev => ({
+      ...prev,
+      selectedStationId: station.id
+    }));
     setShowHistogramModal(true);
-  };
+  }, []);
 
-  const handleCicloviaClick = (ciclovia, nearestStation) => {
+  const handleCicloviaClick = useCallback((ciclovia, nearestStation) => {
     setHighlightedStation(nearestStation);
     setHighlightedLine(calculateHighlightLine(nearestStation, ciclovia));
-  };
+  }, []);
+
+  const handleModalClose = useCallback(() => {
+    setShowHistogramModal(false);
+  }, []);
 
   return (
     <>
@@ -121,7 +128,7 @@ const Mapa = () => {
               stations={stations}
               histogramData={histogramData}
               onHistogramClick={handleHistogramClick}
-              uspFilter={uspFilter}
+              uspFilter={uspMapFilter}
             />
           )}
           
@@ -153,26 +160,23 @@ const Mapa = () => {
           setShowStations={setShowStations}
           showCiclovias={showCiclovias}
           setShowCiclovias={setShowCiclovias}
-          selectedDays={selectedDays}
-          setSelectedDays={setSelectedDays}
-          excludeMonths={excludeMonths}
-          setExcludeMonths={setExcludeMonths}
-          uspFilter={uspFilter}
-          setUspFilter={setUspFilter}
-          startDate={startDate}
-          setStartDate={setStartDate}
-          endDate={endDate}
-          setEndDate={setEndDate}
-          daysOfWeek={DAYS_OF_WEEK}
-          months={MONTHS}
+          uspMapFilter={uspMapFilter}
+          setUspMapFilter={setUspMapFilter}
         />
 
         <HistogramModal
           show={showHistogramModal}
-          onHide={() => setShowHistogramModal(false)}
+          onHide={handleModalClose}
           selectedStation={selectedStation}
           histogramData={histogramData}
-          onStationIdChange={setSelectedStationId}
+          onStationIdChange={(stationId) => {
+            setHistogramFilters(prev => ({
+              ...prev,
+              selectedStationId: stationId
+            }));
+          }}
+          filters={histogramFilters}
+          onFiltersChange={setHistogramFilters}
         />
       </div>
     </>
