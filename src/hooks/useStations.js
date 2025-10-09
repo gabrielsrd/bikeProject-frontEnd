@@ -11,6 +11,7 @@ export const useStations = () => {
       try {
         setLoading(true);
         const data = await stationService.getStations();
+        console.log("Fetched stations:", data);
         setStations(data);
         setError(null);
       } catch (err) {

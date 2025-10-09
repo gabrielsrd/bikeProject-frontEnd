@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Modal, Button, Card, Badge, Row, Col, Form } from "react-bootstrap";
 import { StationChart } from "../Charts";
+import { stationService } from "../../services";
 
 export const HistogramModal = ({
   show,
@@ -12,10 +13,44 @@ export const HistogramModal = ({
   onFiltersChange,
 }) => {
   const [localFilters, setLocalFilters] = useState(filters || {});
+  const [calculationMode, setCalculationMode] = useState('mean'); // 'mean' or 'total'
+  const [stationHistogram, setStationHistogram] = useState(null);
+  const [stationLoading, setStationLoading] = useState(false);
 
   useEffect(() => {
     setLocalFilters(filters || {});
   }, [filters]);
+
+  // Fetch only the selected station's aggregated histogram when selection or
+  // relevant filters change. This makes the modal request small and focused.
+  useEffect(() => {
+    const fetchStation = async () => {
+      if (!selectedStation) {
+        setStationHistogram(null);
+        return;
+      }
+
+  setStationLoading(true);
+      try {
+        const query = {
+          ...localFilters,
+          selectedStationId: selectedStation.id,
+          aggregation: localFilters.aggregation || 'avg'
+        };
+        const data = await stationService.getStationHistogram(query);
+        // stationService returns an array of aggregated station objects.
+        // We expect either a single-element array or legacy per-row records.
+        setStationHistogram(data);
+      } catch (err) {
+        console.error('Failed to fetch station histogram', err);
+        setStationHistogram(null);
+      } finally {
+        setStationLoading(false);
+      }
+    };
+
+    fetchStation();
+  }, [selectedStation, localFilters]);
 
   const handleClose = () => {
     onHide();
@@ -24,6 +59,10 @@ export const HistogramModal = ({
 
   const handleFilterChange = (filterType, value) => {
     const updatedFilters = { ...localFilters, [filterType]: value };
+    // keep aggregation in sync with calculationMode if present
+    if (filterType === 'calculationMode') {
+      updatedFilters.aggregation = value === 'total' ? 'total' : 'avg';
+    }
     setLocalFilters(updatedFilters);
     onFiltersChange && onFiltersChange(updatedFilters);
   };
@@ -78,14 +117,37 @@ export const HistogramModal = ({
   };
 
   const getTotalDataPoints = () => {
-    // If histogramData is an array of hourly data, sum up the values
-    if (Array.isArray(histogramData) && histogramData.length > 0) {
-      if (histogramData[0].departures !== undefined) {
-        return histogramData.reduce((total, hour) => total + (hour.departures || 0) + (hour.arrivals || 0), 0);
-      }
-      return histogramData.length;
+    const dataSource = stationHistogram && stationHistogram.length > 0 ? stationHistogram : histogramData;
+    if (!Array.isArray(dataSource) || dataSource.length === 0 || !selectedStation) return 0;
+
+    const first = dataSource[0];
+
+    // Case 1: aggregated per-station arrays
+    if (first && Array.isArray(first.departures)) {
+      const entry = dataSource.find((e) => e.station_id === selectedStation.id) || dataSource[0];
+      if (!entry) return 0;
+      const depTotal = (entry.departures || []).reduce((s, v) => s + (v || 0), 0);
+      const arrTotal = (entry.arrivals || []).reduce((s, v) => s + (v || 0), 0);
+      return Math.round((depTotal + arrTotal) * 100) / 100;
     }
+
+    // Case 2: legacy per-row records
+    if (first && first.hour !== undefined) {
+      return dataSource
+        .filter((r) => r.station_id === selectedStation.id)
+        .reduce((total, row) => total + (row.departures || 0) + (row.arrivals || 0), 0);
+    }
+
     return 0;
+  };
+
+  const hasDataForSelectedStation = () => {
+    if (!selectedStation || !Array.isArray(histogramData) || histogramData.length === 0) return false;
+    const first = histogramData[0];
+    if (first && Array.isArray(first.departures)) {
+      return histogramData.some((e) => e.station_id === selectedStation.id);
+    }
+    return histogramData.some((r) => r.station_id === selectedStation.id);
   };
 
   return (
@@ -108,6 +170,36 @@ export const HistogramModal = ({
       </Modal.Header>
       
       <Modal.Body className="p-4">
+        {/* Display available period for this station when known */}
+        {stationHistogram && stationHistogram.length > 0 && selectedStation && (() => {
+          const entry = stationHistogram.find(e => e.station_id === selectedStation.id) || stationHistogram[0];
+          if (!entry) return null;
+
+          const toIsoDate = (iso) => {
+            try { return iso ? iso.split('T')[0] : null; } catch { return null; }
+          };
+
+          const handleUseFullPeriod = () => {
+            const start = toIsoDate(entry.period_start);
+            const end = toIsoDate(entry.period_end);
+            const updated = { ...localFilters, startDate: start || '', endDate: end || '' };
+            setLocalFilters(updated);
+            onFiltersChange && onFiltersChange(updated);
+          };
+
+          return (
+            <div className="mb-3 d-flex align-items-center justify-content-between">
+              <small className="text-muted">
+                Período disponível: {entry.period_start ? new Date(entry.period_start).toLocaleDateString() : 'N/A'} — {entry.period_end ? new Date(entry.period_end).toLocaleDateString() : 'N/A'}
+              </small>
+              <div>
+                <button className="btn btn-sm btn-outline-primary" onClick={handleUseFullPeriod}>
+                  Usar período completo
+                </button>
+              </div>
+            </div>
+          );
+        })()}
         {/* Filter Controls */}
         <Card className="mb-3 border-info">
           <Card.Header className="bg-info text-white d-flex justify-content-between align-items-center">
@@ -241,6 +333,35 @@ export const HistogramModal = ({
                   </Col>
                 </Row>
               </Col>
+
+              {/* Calculation Mode */}
+              <Col md={6}>
+                <Form.Label className="fw-bold">
+                  <i className="fas fa-calculator me-2 text-primary"></i>
+                  Tipo de Cálculo
+                </Form.Label>
+                <div className="d-flex gap-3">
+                  <Form.Check
+                    type="radio"
+                    id="calc-mean"
+                    name="calculationMode"
+                    label="Média por período"
+                    checked={calculationMode === 'mean'}
+                    onChange={() => { setCalculationMode('mean'); handleFilterChange('calculationMode', 'mean'); }}
+                  />
+                  <Form.Check
+                    type="radio"
+                    id="calc-total"
+                    name="calculationMode"
+                    label="Total por hora"
+                    checked={calculationMode === 'total'}
+                    onChange={() => { setCalculationMode('total'); handleFilterChange('calculationMode', 'total'); }}
+                  />
+                </div>
+                <Form.Text className="text-muted">
+                  Escolha entre média de viagens ou total acumulado
+                </Form.Text>
+              </Col>
             </Row>
 
             {/* Active Filters Display */}
@@ -259,8 +380,8 @@ export const HistogramModal = ({
           </Card.Body>
         </Card>
         
-        {/* Chart Section */}
-        {selectedStation && histogramData.length > 0 ? (
+  {/* Chart Section */}
+        {selectedStation && hasDataForSelectedStation() ? (
           <Card className="border-0 shadow-sm">
             <Card.Header className="bg-light">
               <Row>
@@ -289,9 +410,16 @@ export const HistogramModal = ({
             
             <Card.Body>
               <div style={{ width: "100%", height: "450px" }}>
-                <StationChart 
-                  stationId={selectedStation.id} 
-                  histogramData={histogramData}
+                {stationLoading ? (
+                  <div className="text-center py-5">
+                    <i className="fas fa-spinner fa-spin fa-2x text-muted mb-3"></i>
+                    <div className="text-muted">Carregando dados da estação...</div>
+                  </div>
+                ) : (
+                  <StationChart 
+                    stationId={selectedStation.id} 
+                    histogramData={ (stationHistogram && stationHistogram.length > 0) ? stationHistogram : histogramData }
+                    calculationMode={calculationMode}
                   options={{
                     responsive: true,
                     maintainAspectRatio: false,
@@ -305,7 +433,9 @@ export const HistogramModal = ({
                       },
                       title: { 
                         display: true, 
-                        text: "Média de Partidas e Chegadas por Hora do Dia",
+                        text: calculationMode === 'total' 
+                          ? "Total de Partidas e Chegadas por Hora do Dia"
+                          : "Média de Partidas e Chegadas por Hora do Dia",
                         font: {
                           size: 16,
                           weight: 'bold'
@@ -325,7 +455,11 @@ export const HistogramModal = ({
                             return `Hora: ${context[0].label}:00`;
                           },
                           label: function(context) {
-                            return `${context.dataset.label}: ${context.parsed.y.toFixed(1)} viagens`;
+                            const value = calculationMode === 'total' 
+                              ? Math.round(context.parsed.y)
+                              : context.parsed.y.toFixed(1);
+                            const unit = calculationMode === 'total' ? 'viagens' : 'viagens em média';
+                            return `${context.dataset.label}: ${value} ${unit}`;
                           }
                         }
                       }
@@ -347,7 +481,9 @@ export const HistogramModal = ({
                       y: { 
                         title: { 
                           display: true, 
-                          text: "Número Médio de Viagens",
+                          text: calculationMode === 'total' 
+                            ? "Número Total de Viagens"
+                            : "Número Médio de Viagens",
                           font: {
                             size: 14,
                             weight: 'bold'
@@ -365,6 +501,7 @@ export const HistogramModal = ({
                     }
                   }}
                 />
+                )}
               </div>
             </Card.Body>
             
@@ -373,7 +510,10 @@ export const HistogramModal = ({
                 <Col>
                   <small>
                     <i className="fas fa-info-circle me-1"></i>
-                    Os dados representam a média de viagens por hora com base nos filtros aplicados.
+                    {calculationMode === 'total' 
+                      ? "Os dados representam o total acumulado de viagens por hora com base nos filtros aplicados."
+                      : "Os dados representam a média de viagens por hora com base nos filtros aplicados."
+                    }
                   </small>
                 </Col>
                 <Col xs="auto">

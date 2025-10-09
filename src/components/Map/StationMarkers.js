@@ -35,7 +35,7 @@ export const StationMarkers = ({
     
     // USP stations are typically in the range 242-260
     return stations.filter(station => 
-      station.id >= 242 && station.id <= 260
+      station.station_id >= 242 && station.station_id <= 260
     );
   }, [stations, uspFilter]);
 

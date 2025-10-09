@@ -7,8 +7,11 @@ export const cicloviaService = {
   getCiclovias: async () => {
     try {
       const response = await api.get("/ciclovias/");
-      return response.data.features.map((feature) => ({
-        id: feature.properties.programa,
+      return response.data.features.map((feature, index) => ({
+        // Use the feature's own id when available (GeoJSON id),
+        // otherwise compose a stable id from the programa + index to
+        // guarantee uniqueness across the array.
+        id: feature.id ?? `${feature.properties.programa}_${index}`,
         programa: feature.properties.programa,
         inauguracao: feature.properties.inauguracao,
         extensao_t: feature.properties.extensao_t,

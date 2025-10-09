@@ -1,22 +1,33 @@
 import React, { useState, useCallback } from "react";
 import { Spinner } from "react-bootstrap";
+import { stationService } from "../../services";
 
 export const StationPopupContent = ({ station, onHistogramClick, histogramData, StationChart }) => {
   const [showChart, setShowChart] = useState(false);
   const [chartLoading, setChartLoading] = useState(false);
+  const [previewData, setPreviewData] = useState(null);
 
-  const handleShowChart = useCallback(() => {
-    if (!showChart && histogramData.length > 0) {
-      setChartLoading(true);
-      // Simulate chart loading time for better UX
-      setTimeout(() => {
+  const handleShowChart = useCallback(async () => {
+    if (!showChart) {
+      // If we don't have histogram data for this station yet, fetch it on demand
+      if (!histogramData || histogramData.length === 0) {
+        setChartLoading(true);
+        try {
+          const data = await stationService.getStationHistogram({ selectedStationId: station.id });
+          setPreviewData(data);
+          setShowChart(true);
+        } catch (err) {
+          console.error("Erro ao buscar preview do histograma:", err);
+        } finally {
+          setChartLoading(false);
+        }
+      } else {
         setShowChart(true);
-        setChartLoading(false);
-      }, 300);
+      }
     } else {
-      setShowChart(!showChart);
+      setShowChart(false);
     }
-  }, [showChart, histogramData.length]);
+  }, [showChart, histogramData, station.id]);
 
   return (
     <div style={{ minWidth: "320px" }}>
@@ -54,20 +65,18 @@ export const StationPopupContent = ({ station, onHistogramClick, histogramData, 
             Ver Análise Completa
           </button>
           
-          {histogramData.length > 0 && (
-            <button
-              className="btn btn-outline-secondary btn-sm"
-              onClick={handleShowChart}
-            >
-              <i className={`fas ${showChart ? 'fa-eye-slash' : 'fa-eye'} me-2`}></i>
-              {showChart ? 'Ocultar' : 'Mostrar'} Prévia
-            </button>
-          )}
+          <button
+            className="btn btn-outline-secondary btn-sm"
+            onClick={handleShowChart}
+          >
+            <i className={`fas ${showChart ? 'fa-eye-slash' : 'fa-eye'} me-2`}></i>
+            {showChart ? 'Ocultar' : 'Mostrar'} Prévia
+          </button>
         </div>
       </div>
 
       {/* Chart Preview */}
-      {histogramData.length > 0 && (showChart || chartLoading) && (
+  {((previewData && previewData.length > 0) || (histogramData && histogramData.length > 0)) && (showChart || chartLoading) && (
         <div>
           <div className="d-flex align-items-center mb-2">
             <small className="text-muted fw-bold">
@@ -76,7 +85,7 @@ export const StationPopupContent = ({ station, onHistogramClick, histogramData, 
             </small>
           </div>
           
-          {chartLoading ? (
+            {chartLoading ? (
             <div 
               className="border rounded p-2 d-flex align-items-center justify-content-center"
               style={{ 
@@ -92,7 +101,7 @@ export const StationPopupContent = ({ station, onHistogramClick, histogramData, 
                 </div>
               </div>
             </div>
-          ) : (
+            ) : (
             <div 
               className="border rounded p-2"
               style={{ 
@@ -103,7 +112,7 @@ export const StationPopupContent = ({ station, onHistogramClick, histogramData, 
             >
               <StationChart 
                 stationId={station.id} 
-                histogramData={histogramData}
+                histogramData={previewData && previewData.length > 0 ? previewData : histogramData}
                 options={{
                   responsive: true,
                   maintainAspectRatio: false,
@@ -161,7 +170,7 @@ export const StationPopupContent = ({ station, onHistogramClick, histogramData, 
       )}
 
       {/* No data message */}
-      {histogramData.length === 0 && (
+      {(!previewData || previewData.length === 0) && (!histogramData || histogramData.length === 0) && (
         <div className="text-center text-muted py-3">
           <i className="fas fa-chart-bar fa-2x mb-2 opacity-50"></i>
           <div>

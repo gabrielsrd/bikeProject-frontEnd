@@ -9,6 +9,7 @@ export const stationService = {
       const response = await api.get("/ciclostation/");
       return response.data.features.map((feature) => ({
         id: feature.properties.id,
+        station_id: feature.properties.station_id,
         name: feature.properties.name,
         coordinates: feature.geometry.coordinates,
       }));
@@ -43,8 +44,12 @@ export const stationService = {
       if (filters.endDate) {
         params.end_date = filters.endDate;
       }
+      // Allow aggregation mode: 'avg' or 'total'
+      if (filters.aggregation) {
+        params.aggregation = filters.aggregation;
+      }
 
-      const response = await api.get("/station_histogram/", { params });
+  const response = await api.get("/station_histogram_test/", { params });
       return response.data;
     } catch (error) {
       console.error("Erro ao buscar dados do histograma:", error);

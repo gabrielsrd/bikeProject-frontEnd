@@ -61,8 +61,11 @@ const Mapa = () => {
   const { hotzones, loading: hotzonesLoading, error: hotzonesError } = useHotzones();
   const { perimetro, loading: perimetroLoading, error: perimetroError } = usePerimetro();
   
-  // Use histogram filters directly for histogram data
-  const { histogramData } = useHistogram(histogramFilters);
+  // Use histogram filters directly for histogram data, but only fetch when a
+  // station is explicitly selected. The modal now fetches per-station data on
+  // demand, so we avoid fetching the full dataset when the modal simply opens.
+  const shouldFetchHistogram = !!histogramFilters.selectedStationId;
+  const { histogramData } = useHistogram(histogramFilters, shouldFetchHistogram);
 
   // Calculate loading state
   const isLoading = stationsLoading || cicloviasLoading || hotzonesLoading || perimetroLoading;
