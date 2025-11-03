@@ -9,6 +9,10 @@ export const MapControls = ({
   setShowCiclovias,
   uspMapFilter,
   setUspMapFilter,
+  showFlowArrows,
+  setShowFlowArrows,
+  flowThreshold,
+  setFlowThreshold,
 }) => {
   const [showMobileControls, setShowMobileControls] = useState(false);
 
@@ -63,7 +67,51 @@ export const MapControls = ({
                 setShowCiclovias(e.target.checked);
               }}
               onClick={(e) => e.stopPropagation()}
+              className="mb-3"
             />
+            
+            <Form.Check
+              type="switch"
+              id="switch-flows"
+              label={
+                <span>
+                  <i className="fas fa-arrow-right me-2 text-danger"></i>
+                  Fluxos de Viagens
+                  {showFlowArrows && <Badge bg="danger" className="ms-2">Ativo</Badge>}
+                </span>
+              }
+              checked={showFlowArrows}
+              onChange={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setShowFlowArrows(e.target.checked);
+              }}
+              onClick={(e) => e.stopPropagation()}
+            />
+            
+            {/* Controle de limiar de fluxo */}
+            {showFlowArrows && (
+              <div className="mt-3 p-2 bg-light rounded">
+                <Form.Label className="mb-2">
+                  <small>
+                    <i className="fas fa-sliders-h me-2"></i>
+                    Limiar Mínimo: <strong>{flowThreshold} viagens</strong>
+                  </small>
+                </Form.Label>
+                <Form.Range
+                  min="50"
+                  max="500"
+                  step="50"
+                  value={flowThreshold}
+                  onChange={(e) => setFlowThreshold(parseInt(e.target.value))}
+                  onClick={(e) => e.stopPropagation()}
+                />
+                <div className="d-flex justify-content-between">
+                  <small className="text-muted">50</small>
+                  <small className="text-muted">500</small>
+                </div>
+              </div>
+            )}
           </div>
         </Accordion.Body>
       </Accordion.Item>

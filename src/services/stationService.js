@@ -7,12 +7,16 @@ export const stationService = {
   getStations: async () => {
     try {
       const response = await api.get("/ciclostation/");
-      return response.data.features.map((feature) => ({
-        id: feature.properties.id,
-        station_id: feature.properties.station_id,
-        name: feature.properties.name,
-        coordinates: feature.geometry.coordinates,
-      }));
+      console.log("resposta aqui",response.data.features[0].geometry.coordinates)
+      
+      return response.data.features
+        .filter((feature) => feature.geometry && feature.geometry.coordinates)
+        .map((feature) => ({
+          id: feature.properties?.id,
+          station_id: feature.properties?.station_id,
+          name: feature.properties?.name,
+          coordinates: feature.geometry.coordinates,
+        }));
     } catch (error) {
       console.error("Erro ao buscar dados das estações:", error);
       throw error;

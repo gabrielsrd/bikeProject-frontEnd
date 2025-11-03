@@ -3,6 +3,7 @@ import { MapContainer, TileLayer } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./components/Map/MarkerClusterStyles.css";
+import "./components/Map/FlowArrows.css";
 
 // Hooks
 import { 
@@ -10,7 +11,8 @@ import {
   useCiclovias, 
   useHotzones, 
   usePerimetro, 
-  useHistogram 
+  useHistogram,
+  useFlows
 } from "./hooks";
 
 // Components
@@ -21,6 +23,7 @@ import {
   PerimetroLayer,
   HighlightedElements,
   FetchGeoJsonOnMove,
+  FlowArrows,
   MapControls,
   HistogramModal,
   AppHeader,
@@ -42,6 +45,8 @@ const Mapa = () => {
   const [showHotzones] = useState(true);
   const [showHistogramModal, setShowHistogramModal] = useState(false);
   const [selectedStation, setSelectedStation] = useState(null);
+  const [showFlowArrows, setShowFlowArrows] = useState(false);
+  const [flowThreshold, setFlowThreshold] = useState(100); // Limiar mínimo de viagens
   
   // Map display filters (for stations/ciclovias visibility)
   const [uspMapFilter, setUspMapFilter] = useState(true); // Default to true for USP stations on map
@@ -66,6 +71,16 @@ const Mapa = () => {
   // demand, so we avoid fetching the full dataset when the modal simply opens.
   const shouldFetchHistogram = !!histogramFilters.selectedStationId;
   const { histogramData } = useHistogram(histogramFilters, shouldFetchHistogram);
+
+  // Fetch flow data with same filters as histogram
+  const flowFilters = {
+    selectedDays: histogramFilters.selectedDays,
+    excludeMonths: histogramFilters.excludeMonths,
+    uspFilter: uspMapFilter,
+    limit: 100, // Top 100 flows
+    minTrips: flowThreshold // Aplicar limiar
+  };
+  const { flows } = useFlows(showFlowArrows ? flowFilters : null);
 
   // Calculate loading state
   const isLoading = stationsLoading || cicloviasLoading || hotzonesLoading || perimetroLoading;
@@ -146,6 +161,13 @@ const Mapa = () => {
           
           {showHotzones && <HotzonesLayer hotzones={hotzones} />}
           
+          {/* Flow Arrows - mostrar fluxos de viagens */}
+          <FlowArrows 
+            flows={flows}
+            visible={showFlowArrows}
+            minThreshold={flowThreshold}
+          />
+          
           <HighlightedElements
             highlightedStation={highlightedStation}
             highlightedLine={highlightedLine}
@@ -165,6 +187,10 @@ const Mapa = () => {
           setShowCiclovias={setShowCiclovias}
           uspMapFilter={uspMapFilter}
           setUspMapFilter={setUspMapFilter}
+          showFlowArrows={showFlowArrows}
+          setShowFlowArrows={setShowFlowArrows}
+          flowThreshold={flowThreshold}
+          setFlowThreshold={setFlowThreshold}
         />
 
         <HistogramModal

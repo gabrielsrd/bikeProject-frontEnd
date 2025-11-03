@@ -1,0 +1,74 @@
+/* Flow Arrows Styling */
+
+.flow-arrow {
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.flow-arrow:hover {
+  filter: brightness(1.2);
+}
+
+/* Adicionar setas nas pontas das linhas usando SVG marker */
+.leaflet-pane svg .flow-arrow {
+  marker-end: url(#arrowhead);
+}
+
+/* Legenda de fluxos */
+.flow-legend {
+  position: absolute;
+  bottom: 80px;
+  right: 10px;
+  background: white;
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  z-index: 1000;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.flow-legend strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #333;
+}
+
+/* Responsividade mobile */
+@media (max-width: 768px) {
+  .flow-legend {
+    bottom: 60px;
+    right: 5px;
+    padding: 8px;
+    font-size: 11px;
+  }
+}
+
+/* Animação suave para carregar/descarregar */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 0.7;
+  }
+}
+
+.flow-arrow {
+  animation: fadeIn 0.5s ease-in;
+}
+
+/* Tooltip customizado para fluxos */
+.leaflet-tooltip {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.leaflet-tooltip strong {
+  color: #1976d2;
+  font-size: 14px;
+}
+
+.leaflet-tooltip small {
+  color: #666;
+}
