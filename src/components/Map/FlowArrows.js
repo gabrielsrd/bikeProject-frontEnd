@@ -2,16 +2,43 @@ import React, { useMemo } from "react";
 import { Polyline, Tooltip } from "react-leaflet";
 import L from "leaflet";
 
-/**
- * Componente que renderiza setas de fluxo entre estações
- * As setas são proporcionais ao volume de viagens
- */
+const createCurvedPath = (start, end, curveOffset) => {
+  const [lat1, lon1] = start;
+  const [lat2, lon2] = end;
+  
+  // Ponto médio
+  const midLat = (lat1 + lat2) / 2;
+  const midLon = (lon1 + lon2) / 2;
+  
+  // Vetor perpendicular para deslocar o ponto médio
+  const dLat = lat2 - lat1;
+  const dLon = lon2 - lon1;
+  const length = Math.sqrt(dLat * dLat + dLon * dLon);
+  
+  if (length === 0) return [start, end];
+  
+  // Ponto de controle deslocado perpendicularmente
+  const perpLat = -dLon / length * curveOffset;
+  const perpLon = dLat / length * curveOffset;
+  const controlPoint = [midLat + perpLat, midLon + perpLon];
+  
+  // Gerar curva de Bézier quadrática
+  const points = [];
+  for (let i = 0; i <= 30; i++) {
+    const t = i / 30;
+    const t1 = 1 - t;
+    const lat = t1 * t1 * lat1 + 2 * t1 * t * controlPoint[0] + t * t * lat2;
+    const lon = t1 * t1 * lon1 + 2 * t1 * t * controlPoint[1] + t * t * lon2;
+    points.push([lat, lon]);
+  }
+  
+  return points;
+};
+
 export const FlowArrows = ({ flows, visible = false, minThreshold = 100 }) => {
-  // Calcular estatísticas dos fluxos
   const flowStats = useMemo(() => {
     if (!flows || flows.length === 0) return { max: 0, min: 0, filtered: [] };
     
-    // Filtrar por limiar mínimo
     const filtered = flows.filter(f => f.trip_count >= minThreshold);
     
     if (filtered.length === 0) return { max: 0, min: 0, filtered: [] };
@@ -24,65 +51,29 @@ export const FlowArrows = ({ flows, visible = false, minThreshold = 100 }) => {
     };
   }, [flows, minThreshold]);
 
-  /**
-   * Calcula estilo da linha baseado no volume de viagens
-   */
   const getFlowStyle = (tripCount) => {
     const { max, min } = flowStats;
     const range = max - min;
     
-    // Normalizar entre 0 e 1
     const intensity = range > 0 ? (tripCount - min) / range : 0.5;
     
-    // Espessura: 2px (baixo) até 8px (alto)
     const weight = 2 + (intensity * 6);
     
     // Cor baseada na intensidade (gradiente verde → amarelo → vermelho)
     let color;
     if (intensity < 0.33) {
-      // Verde para fluxos baixos
       color = "#4CAF50";
     } else if (intensity < 0.66) {
-      // Amarelo para fluxos médios
       color = "#FFC107";
     } else {
-      // Vermelho para fluxos altos
       color = "#F44336";
     }
     
     return { 
       weight, 
       color, 
-      opacity: 0.7,
-      // Adicionar seta no final da linha
-      className: "flow-arrow"
+      opacity: 0.7
     };
-  };
-
-  /**
-   * Cria decorador de seta para a polyline
-   */
-  const createArrowDecorator = (map, polyline, color) => {
-    if (!map || !polyline || !L.polylineDecorator) return null;
-    
-    return L.polylineDecorator(polyline, {
-      patterns: [
-        {
-          offset: '100%',
-          repeat: 0,
-          symbol: L.Symbol.arrowHead({
-            pixelSize: 15,
-            polygon: false,
-            pathOptions: {
-              stroke: true,
-              weight: 2,
-              color: color,
-              fillOpacity: 1
-            }
-          })
-        }
-      ]
-    });
   };
 
   if (!visible || !flowStats.filtered || flowStats.filtered.length === 0) {
@@ -95,13 +86,21 @@ export const FlowArrows = ({ flows, visible = false, minThreshold = 100 }) => {
         const style = getFlowStyle(flow.trip_count);
         const key = `flow-${flow.origin_station_id}-${flow.destination_station_id}-${index}`;
         
+        // Determinar direção da curva: ida e volta curvam para lados opostos
+        const curveDirection = flow.origin_station_id < flow.destination_station_id ? 1 : -1;
+        const curveOffset = 0.003 * curveDirection;
+        
+        // Criar caminho curvo
+        const positions = createCurvedPath(
+          flow.origin_coords,
+          flow.destination_coords,
+          curveOffset
+        );
+        
         return (
           <Polyline
             key={key}
-            positions={[
-              flow.origin_coords,
-              flow.destination_coords
-            ]}
+            positions={positions}
             {...style}
             // Adicionar eventos para interatividade
             eventHandlers={{
