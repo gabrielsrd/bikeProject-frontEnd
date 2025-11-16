@@ -9,7 +9,7 @@ export const StationPopupContent = ({ station, onHistogramClick, histogramData, 
 
   const handleShowChart = useCallback(async () => {
     if (!showChart) {
-      // If we don't have histogram data for this station yet, fetch it on demand
+      // buscar dados se nao tiver
       if (!histogramData || histogramData.length === 0) {
         setChartLoading(true);
         try {

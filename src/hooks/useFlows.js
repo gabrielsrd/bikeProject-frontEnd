@@ -13,6 +13,7 @@ export const useFlows = (filters) => {
         const data = await flowService.getTripFlows(filters);
         setFlows(data);
         setError(null);
+        // console.log('flows carregados:', data.length); // debug
       } catch (err) {
         console.error("Erro ao buscar fluxos:", err);
         setError(err);

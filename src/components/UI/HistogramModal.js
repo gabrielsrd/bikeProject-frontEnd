@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Modal, Button, Card, Badge, Row, Col, Form } from "react-bootstrap";
-import { StationChart } from "../Charts";
+import { Modal, Button, Card, Badge, Row, Col, Form, ButtonGroup } from "react-bootstrap";
+import { StationChart, TideEffectChart } from "../Charts";
 import { stationService } from "../../services";
 
 export const HistogramModal = ({
@@ -14,8 +14,11 @@ export const HistogramModal = ({
 }) => {
   const [localFilters, setLocalFilters] = useState(filters || {});
   const [calculationMode, setCalculationMode] = useState('mean'); // 'mean' or 'total'
+  const [viewMode, setViewMode] = useState('histogram'); // 'histogram' or 'tide'
   const [stationHistogram, setStationHistogram] = useState(null);
+  const [tideEffectData, setTideEffectData] = useState(null);
   const [stationLoading, setStationLoading] = useState(false);
+  const [tideLoading, setTideLoading] = useState(false);
 
   useEffect(() => {
     setLocalFilters(filters || {});
@@ -51,6 +54,35 @@ export const HistogramModal = ({
 
     fetchStation();
   }, [selectedStation, localFilters]);
+
+  // Fetch tide effect data when viewMode is 'tide'
+  useEffect(() => {
+    const fetchTideEffect = async () => {
+      if (!selectedStation || viewMode !== 'tide') {
+        setTideEffectData(null);
+        return;
+      }
+
+      setTideLoading(true);
+      try {
+        const query = {
+          selectedDays: localFilters.selectedDays,
+          excludeMonths: localFilters.excludeMonths,
+          startDate: localFilters.startDate,
+          endDate: localFilters.endDate
+        };
+        const data = await stationService.getTideEffect(selectedStation.station_id, query);
+        setTideEffectData(data);
+      } catch (err) {
+        console.error('Failed to fetch tide effect data', err);
+        setTideEffectData(null);
+      } finally {
+        setTideLoading(false);
+      }
+    };
+
+    fetchTideEffect();
+  }, [selectedStation, localFilters, viewMode]);
 
   const handleClose = () => {
     onHide();
@@ -142,6 +174,7 @@ export const HistogramModal = ({
   };
 
   const hasDataForSelectedStation = () => {
+    return true
     if (!selectedStation || !Array.isArray(histogramData) || histogramData.length === 0) return false;
     const first = histogramData[0];
     if (first && Array.isArray(first.departures)) {
@@ -170,6 +203,41 @@ export const HistogramModal = ({
       </Modal.Header>
       
       <Modal.Body className="p-4">
+        {/* View Mode Toggle */}
+        <Card className="mb-3 border-primary">
+          <Card.Body className="py-2">
+            <Row className="align-items-center">
+              <Col md={8}>
+                <small className="text-muted">
+                  <i className="fas fa-info-circle me-2"></i>
+                  <strong>Escolha o tipo de visualização:</strong>
+                  {viewMode === 'histogram' 
+                    ? ' Histograma mostra partidas e chegadas separadamente'
+                    : ' Efeito Maré mostra o saldo líquido (partidas - chegadas) indicando fluxo de entrada/saída'}
+                </small>
+              </Col>
+              <Col md={4} className="text-end">
+                <ButtonGroup size="sm">
+                  <Button 
+                    variant={viewMode === 'histogram' ? 'primary' : 'outline-primary'}
+                    onClick={() => setViewMode('histogram')}
+                  >
+                    <i className="fas fa-chart-bar me-1"></i>
+                    Histograma
+                  </Button>
+                  <Button 
+                    variant={viewMode === 'tide' ? 'success' : 'outline-success'}
+                    onClick={() => setViewMode('tide')}
+                  >
+                    <i className="fas fa-water me-1"></i>
+                    Efeito Maré
+                  </Button>
+                </ButtonGroup>
+              </Col>
+            </Row>
+          </Card.Body>
+        </Card>
+
         {/* Display available period for this station when known */}
         {stationHistogram && stationHistogram.length > 0 && selectedStation && (() => {
           const entry = stationHistogram.find(e => e.station_id === selectedStation.id) || stationHistogram[0];
@@ -380,57 +448,92 @@ export const HistogramModal = ({
           </Card.Body>
         </Card>
         
-  {/* Chart Section */}
-        {selectedStation && hasDataForSelectedStation() ? (
+        {selectedStation  ? (
           <Card className="border-0 shadow-sm">
             <Card.Header className="bg-light">
               <Row>
                 <Col>
                   <h5 className="mb-0">
-                    <i className="fas fa-clock me-2 text-primary"></i>
-                    Histograma de Utilização por Hora
+                    {viewMode === 'histogram' ? (
+                      <>
+                        <i className="fas fa-clock me-2 text-primary"></i>
+                        Histograma de Utilização por Hora
+                      </>
+                    ) : (
+                      <>
+                        <i className="fas fa-water me-2 text-success"></i>
+                        Efeito Maré - Análise de Fluxo
+                      </>
+                    )}
                   </h5>
                   <small className="text-muted">
-                    <i className="fas fa-database me-1"></i>
-                    {getTotalDataPoints()} viagens registradas com os filtros aplicados
+                    {viewMode === 'histogram' ? (
+                      <>
+                        <i className="fas fa-database me-1"></i>
+                        {getTotalDataPoints()} viagens registradas com os filtros aplicados
+                      </>
+                    ) : (
+                      <>
+                        <i className="fas fa-info-circle me-1"></i>
+                        {tideEffectData 
+                          ? `Total: ${tideEffectData.total_departures} partidas, ${tideEffectData.total_arrivals} chegadas (Saldo: ${tideEffectData.total_balance >= 0 ? '+' : ''}${tideEffectData.total_balance})`
+                          : 'Carregando dados...'}
+                      </>
+                    )}
                   </small>
                 </Col>
                 <Col xs="auto">
-                  <Badge bg="success" className="me-2">
-                    <i className="fas fa-arrow-up me-1"></i>
-                    Partidas
-                  </Badge>
-                  <Badge bg="danger">
-                    <i className="fas fa-arrow-down me-1"></i>
-                    Chegadas
-                  </Badge>
+                  {viewMode === 'histogram' ? (
+                    <>
+                      <Badge bg="success" className="me-2">
+                        <i className="fas fa-arrow-up me-1"></i>
+                        Partidas
+                      </Badge>
+                      <Badge bg="danger">
+                        <i className="fas fa-arrow-down me-1"></i>
+                        Chegadas
+                      </Badge>
+                    </>
+                  ) : (
+                    <>
+                      <Badge bg="success" className="me-2">
+                        <i className="fas fa-sign-in-alt me-1"></i>
+                        Entrada no Campus
+                      </Badge>
+                      <Badge bg="danger">
+                        <i className="fas fa-sign-out-alt me-1"></i>
+                        Saída do Campus
+                      </Badge>
+                    </>
+                  )}
                 </Col>
               </Row>
             </Card.Header>
             
             <Card.Body>
               <div style={{ width: "100%", height: "450px" }}>
-                {stationLoading ? (
-                  <div className="text-center py-5">
-                    <i className="fas fa-spinner fa-spin fa-2x text-muted mb-3"></i>
-                    <div className="text-muted">Carregando dados da estação...</div>
-                  </div>
-                ) : (
-                  <StationChart 
-                    stationId={selectedStation.id} 
-                    histogramData={ (stationHistogram && stationHistogram.length > 0) ? stationHistogram : histogramData }
-                    calculationMode={calculationMode}
-                  options={{
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                      legend: { 
-                        position: "top",
-                        labels: {
-                          usePointStyle: true,
-                          padding: 20
-                        }
-                      },
+                {viewMode === 'histogram' ? (
+                  stationLoading ? (
+                    <div className="text-center py-5">
+                      <i className="fas fa-spinner fa-spin fa-2x text-muted mb-3"></i>
+                      <div className="text-muted">Carregando dados da estação...</div>
+                    </div>
+                  ) : (
+                    <StationChart 
+                      stationId={selectedStation.id} 
+                      histogramData={ (stationHistogram && stationHistogram.length > 0) ? stationHistogram : histogramData }
+                      calculationMode={calculationMode}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: { 
+                          position: "top",
+                          labels: {
+                            usePointStyle: true,
+                            padding: 20
+                          }
+                        },
                       title: { 
                         display: true, 
                         text: calculationMode === 'total' 
@@ -501,7 +604,29 @@ export const HistogramModal = ({
                     }
                   }}
                 />
-                )}
+                )
+              ) : (
+                // Tide Effect View
+                tideLoading ? (
+                  <div className="text-center py-5">
+                    <i className="fas fa-spinner fa-spin fa-2x text-muted mb-3"></i>
+                    <div className="text-muted">Carregando dados do efeito maré...</div>
+                  </div>
+                ) : tideEffectData ? (
+                  <TideEffectChart 
+                    tideData={tideEffectData}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                    }}
+                  />
+                ) : (
+                  <div className="text-center text-muted py-5">
+                    <i className="fas fa-exclamation-triangle fa-2x mb-3"></i>
+                    <p>Erro ao carregar dados do efeito maré</p>
+                  </div>
+                )
+              )}
               </div>
             </Card.Body>
             
@@ -510,10 +635,13 @@ export const HistogramModal = ({
                 <Col>
                   <small>
                     <i className="fas fa-info-circle me-1"></i>
-                    {calculationMode === 'total' 
-                      ? "Os dados representam o total acumulado de viagens por hora com base nos filtros aplicados."
-                      : "Os dados representam a média de viagens por hora com base nos filtros aplicados."
-                    }
+                    {viewMode === 'histogram' ? (
+                      calculationMode === 'total' 
+                        ? "Os dados representam o total acumulado de viagens por hora com base nos filtros aplicados."
+                        : "Os dados representam a média de viagens por hora com base nos filtros aplicados."
+                    ) : (
+                      "O efeito maré mostra o saldo entre partidas e chegadas por hora. Valores positivos (verde) indicam mais saídas da estação (entrada no campus), enquanto valores negativos (vermelho) indicam mais chegadas à estação (saída do campus)."
+                    )}
                   </small>
                 </Col>
                 <Col xs="auto">

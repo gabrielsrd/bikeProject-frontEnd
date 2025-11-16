@@ -6,11 +6,11 @@ const createCurvedPath = (start, end, curveOffset) => {
   const [lat1, lon1] = start;
   const [lat2, lon2] = end;
   
-  // Ponto médio
+  // calculo do ponto medio
   const midLat = (lat1 + lat2) / 2;
   const midLon = (lon1 + lon2) / 2;
   
-  // Vetor perpendicular para deslocar o ponto médio
+  // Vetor perpendicular pra curva
   const dLat = lat2 - lat1;
   const dLon = lon2 - lon1;
   const length = Math.sqrt(dLat * dLat + dLon * dLon);

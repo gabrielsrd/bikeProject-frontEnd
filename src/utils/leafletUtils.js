@@ -1,8 +1,6 @@
 import L from "leaflet";
 
-/**
- * Configure Leaflet default markers
- */
+// configurar markers padrão do leaflet
 export const configureLeafletMarkers = () => {
   delete L.Icon.Default.prototype._getIconUrl;
   L.Icon.Default.mergeOptions({
@@ -12,9 +10,7 @@ export const configureLeafletMarkers = () => {
   });
 };
 
-/**
- * Calculate highlight line between station and ciclovia
- */
+// calcular linha entre estacao e ciclovia
 export const calculateHighlightLine = (station, ciclovia) => {
   return [
     [station.coordinates[1], station.coordinates[0]],

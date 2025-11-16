@@ -1,95 +1,56 @@
+# BikeProject - Frontend
 
+Aplicação web desenvolvida como parte do TCC de Ciências da Computação - USP.
 
-# Aplicação Web para Análise de Ciclofaixas e Estações de Bicicletas em São Paulo
+## Sobre o Projeto
 
-**Descrição**:  
-Esta aplicação web interativa, desenvolvida em React, faz parte de um Trabalho de Conclusão de Curso (TCC) em Ciência da Computação. O projeto fornece uma visualização detalhada da infraestrutura cicloviária de São Paulo, incluindo ciclofaixas, estações de bicicletas compartilhadas e zonas de alta demanda de viagens (hotzones).  
+Este projeto visualiza dados de infraestrutura cicloviária de São Paulo, incluindo ciclofaixas, estações de bicicletas compartilhadas e análise de fluxo de viagens.
 
-Os dados são obtidos de uma API backend desenvolvida em Python, que realiza cálculos geográficos e serve os resultados em formato GeoJSON.  
+O objetivo é ajudar a entender melhor como as pessoas usam o sistema de bikes compartilhadas na cidade e identificar onde a infraestrutura pode ser melhorada.
 
-A aplicação é projetada para fornecer informações úteis a organizações, operadoras de bicicletas compartilhadas e gestores urbanos interessados em melhorar a infraestrutura cicloviária.  
-
-**Objetivo**:
-O projeto busca fornecer insights detalhados e acessíveis para empresas, organizações e gestores urbanos interessados em otimizar a infraestrutura cicloviária. Isso inclui a identificação de rotas mais utilizadas, áreas prioritárias para melhorias e análise de dados que podem auxiliar na tomada de decisões estratégicas.
----
-
-## **Funcionalidades**
 <img src="public/capturaTela.png" width="100%" alt="capturatela">
 
-1. **Visualização Interativa**:  
-   - Exibe ciclofaixas de São Paulo e localizações das estações de bicicletas compartilhadas.  
+## Funcionalidades
 
-2. **Filtros Personalizáveis**:  
-   - Filtrar ciclofaixas sem uma estação de bicicleta próxima (com intervalo configurável pelo usuário).  
-   - Exibir hotzones com alta densidade de viagens.  
+- Mapa interativo com ciclofaixas e estações
+- Filtros para visualizar diferentes aspectos dos dados
+- Visualização de zonas de alta demanda (hotzones)
+- Análise de fluxo entre estações
+- Gráficos com estatísticas de uso
 
-3. **Dados de Viagem e Rotas Mais Frequentes**:  
-   - Destacar rotas mais utilizadas pelos usuários.  
+## Tecnologias
 
-4. **Interatividade no Mapa**:  
-   - Ao clicar em uma ciclofaixa: mostra a estação mais próxima.  
-   - Ao clicar em uma estação: exibe para quais estações a maioria das viagens se destina.  
+- React
+- Leaflet para mapas
+- Bootstrap para UI
+- Backend em Django (repositório separado)
 
-5. **Futuras Melhorias Planejadas**:  
-   - Melhoria no design da página para uma experiência de usuário aprimorada.  
-   - Possibilidade de upload de arquivos GeoJSON personalizados para análise.  
+## Como rodar
 
----
+1. Instalar dependencias:
+```bash
+npm install
+```
 
-## **Tecnologias Utilizadas**
+2. Certificar que o backend está rodando (ver repositório backend)
 
-- **Frontend**: React, JavaScript  
-- **Backend**: Django API (separado, disponível em outro repositório)  
-- **Mapas**: Leaflet, Mapbox ou Folium para renderização interativa  
+3. Iniciar aplicação:
+```bash
+npm start
+```
 
----
+A aplicação vai abrir em `http://localhost:3000`
 
-## **Como Executar o Projeto**
+## Backend
 
-1. **Instale as dependências**:  
-   ```bash
-   npm install
-   ```
+O backend desse projeto está em: https://github.com/gabrielsrd/bikeProject-backEnd
 
-2. **Configure o ambiente**:  
-   Certifique-se de que a API backend está em execução e configurada corretamente.  
+## Estrutura do Projeto
 
-3. **Inicie o projeto**:  
-   ```bash
-   npm start
-   ```
-
-4. **Acesse a aplicação**:  
-   Abra o navegador e acesse `http://localhost:3000`.  
-
----
-
-## **Fluxo de Dados**
-
-1. **API Backend**:  
-   Fornece os dados no formato GeoJSON por meio de três endpoints:  
-   - Ciclofaixas: `/api/ciclovias/`  
-   - Estações: `/api/estacoes/`  
-   - Hotzones: `/api/hotzones/`  
-
-2. **Frontend**:  
-   - Consome os dados da API para exibição interativa no mapa.  
-   - Implementa filtros e cálculos adicionais baseados nas configurações do usuário.  
-
-
-
-## **Próximos Passos**
-
-1. **Design e UX**:  
-   Planejamos aprimorar o design geral da aplicação, com foco na usabilidade e responsividade.  
-
-2. **Funcionalidades Avançadas**:  
-   Implementar a opção de upload de arquivos personalizados para análise.  
-
-3. **Integração com Mapas Avançados**:  
-   Explorar serviços como Mapbox para visualizações mais dinâmicas e detalhadas.  
-
-## **BackEnd**
-Link para o repositório backEnd: https://github.com/gabrielsrd/bikeProject-backEnd 
- 
----
+```
+src/
+├── components/    # Componentes React
+├── services/      # Chamadas para API
+├── hooks/         # Custom hooks
+└── utils/         # Funções auxiliares
+```

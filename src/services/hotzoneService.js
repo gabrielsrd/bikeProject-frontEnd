@@ -1,9 +1,7 @@
 import api from "./api";
 
 export const hotzoneService = {
-  /**
-   * Fetch hotzone data
-   */
+  // buscar hotzones
   getHotzones: async () => {
     try {
       const response = await api.get("/hotzones/");

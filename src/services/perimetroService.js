@@ -1,6 +1,4 @@
-/**
- * Fetch perimeter data from static file
- */
+// buscar perimetro do campus
 export const perimetroService = {
   getPerimetro: async () => {
     try {

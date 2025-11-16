@@ -5,7 +5,6 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import "./components/Map/MarkerClusterStyles.css";
 import "./components/Map/FlowArrows.css";
 
-// Hooks
 import { 
   useStations, 
   useCiclovias, 
@@ -15,7 +14,6 @@ import {
   useFlows
 } from "./hooks";
 
-// Components
 import {
   StationMarkers,
   CicloviaPolylines,
@@ -31,12 +29,11 @@ import {
   ErrorAlert,
 } from "./components";
 
-// Constants and utilities
 import { MAP_CONFIG } from "./constants";
 import { configureLeafletMarkers, calculateHighlightLine } from "./utils";
 
 const Mapa = () => {
-  // State management
+  // TODO: melhorar performance do mapa quando tem muitas estações
   const [highlightedStation, setHighlightedStation] = useState(null);
   const [highlightedLine, setHighlightedLine] = useState(null);
   const [showStations, setShowStations] = useState(true);
@@ -46,7 +43,7 @@ const Mapa = () => {
   const [showHistogramModal, setShowHistogramModal] = useState(false);
   const [selectedStation, setSelectedStation] = useState(null);
   const [showFlowArrows, setShowFlowArrows] = useState(false);
-  const [flowThreshold, setFlowThreshold] = useState(100); // Limiar mínimo de viagens
+  const [flowThreshold, setFlowThreshold] = useState(100);
   
   // Map display filters (for stations/ciclovias visibility)
   const [uspMapFilter, setUspMapFilter] = useState(true); // Default to true for USP stations on map
@@ -66,11 +63,13 @@ const Mapa = () => {
   const { hotzones, loading: hotzonesLoading, error: hotzonesError } = useHotzones();
   const { perimetro, loading: perimetroLoading, error: perimetroError } = usePerimetro();
   
-  // Use histogram filters directly for histogram data, but only fetch when a
-  // station is explicitly selected. The modal now fetches per-station data on
-  // demand, so we avoid fetching the full dataset when the modal simply opens.
-  const shouldFetchHistogram = !!histogramFilters.selectedStationId;
-  const { histogramData } = useHistogram(histogramFilters, shouldFetchHistogram);
+  // OTIMIZAÇÃO: Não buscar histograma aqui - o modal faz sua própria requisição
+  // Isso evita requisição duplicada e melhora performance
+  // const shouldFetchHistogram = !!histogramFilters.selectedStationId;
+  // const { histogramData } = useHistogram(histogramFilters, shouldFetchHistogram);
+  
+  // Histograma vazio - o modal buscará quando necessário
+  const histogramData = [];
 
   // Fetch flow data with same filters as histogram
   const flowFilters = {
@@ -134,8 +133,8 @@ const Mapa = () => {
 
         <MapContainer center={MAP_CONFIG.CENTER} zoom={MAP_CONFIG.ZOOM} style={{ height: "100%", width: "100%" }}>
           <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution="© OpenStreetMap contributors"
+            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
           />
           <FetchGeoJsonOnMove onBoundsChange={loadFeatures} />
           
@@ -159,7 +158,7 @@ const Mapa = () => {
             />
           )}
           
-          {showHotzones && <HotzonesLayer hotzones={hotzones} />}
+          {/* {showHotzones && <HotzonesLayer hotzones={hotzones} />} */}
           
           {/* Flow Arrows - mostrar fluxos de viagens */}
           <FlowArrows 

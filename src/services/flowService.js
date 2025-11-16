@@ -1,9 +1,7 @@
 import api from "./api";
 
 export const flowService = {
-  /**
-   * Fetch trip flows between stations with filters
-   */
+  // buscar fluxos de viagens entre estacoes
   getTripFlows: async (filters = {}) => {
     try {
       const params = {};

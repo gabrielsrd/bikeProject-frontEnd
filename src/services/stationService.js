@@ -1,14 +1,13 @@
 import api from "./api";
 
 export const stationService = {
-  /**
-   * Fetch all bike stations
-   */
+  // buscar todas estacoes
   getStations: async () => {
     try {
       const response = await api.get("/ciclostation/");
       console.log("resposta aqui",response.data.features[0].geometry.coordinates)
       
+      // filtra estacoes com coordenadas validas
       return response.data.features
         .filter((feature) => feature.geometry && feature.geometry.coordinates)
         .map((feature) => ({
@@ -23,9 +22,7 @@ export const stationService = {
     }
   },
 
-  /**
-   * Fetch histogram data for stations with filters
-   */
+  // pegar dados do histograma com filtros
   getStationHistogram: async (filters = {}) => {
     try {
       const params = {};
@@ -57,6 +54,35 @@ export const stationService = {
       return response.data;
     } catch (error) {
       console.error("Erro ao buscar dados do histograma:", error);
+      throw error;
+    }
+  },
+
+  // buscar efeito mare (saidas - entradas por hora)
+  getTideEffect: async (stationId, filters = {}) => {
+    try {
+      const params = { station_id: stationId };
+      
+      if (filters.selectedDays?.length > 0) {
+        params.days = filters.selectedDays.join(",");
+      }
+      if (filters.excludeMonths?.length > 0) {
+        params.months = filters.excludeMonths.join(",");
+      }
+      if (filters.uspFilter) {
+        params.usp = true;
+      }
+      if (filters.startDate) {
+        params.start_date = filters.startDate;
+      }
+      if (filters.endDate) {
+        params.end_date = filters.endDate;
+      }
+
+      const response = await api.get("/station_tide_effect/", { params });
+      return response.data;
+    } catch (error) {
+      console.error("Erro ao buscar dados do efeito maré:", error);
       throw error;
     }
   },

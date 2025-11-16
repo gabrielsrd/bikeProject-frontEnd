@@ -16,6 +16,7 @@ export const MapControls = ({
 }) => {
   const [showMobileControls, setShowMobileControls] = useState(false);
 
+  // FIXME: accordion as vezes nao fecha no mobile, verificar depois
   const ControlsContent = () => (
     <StableAccordion defaultActiveKey="0">
       {/* Layer Controls */}

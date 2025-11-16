@@ -1,16 +1,12 @@
 import api from "./api";
 
 export const cicloviaService = {
-  /**
-   * Fetch all ciclovias (bike lanes)
-   */
+  // buscar ciclovias
   getCiclovias: async () => {
     try {
       const response = await api.get("/ciclovias/");
       return response.data.features.map((feature, index) => ({
-        // Use the feature's own id when available (GeoJSON id),
-        // otherwise compose a stable id from the programa + index to
-        // guarantee uniqueness across the array.
+        // usar id do feature ou criar um composto
         id: feature.id ?? `${feature.properties.programa}_${index}`,
         programa: feature.properties.programa,
         inauguracao: feature.properties.inauguracao,
