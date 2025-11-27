@@ -32,7 +32,7 @@ export const MapControls = ({
               label={
                 <span>
                   <i className="fas fa-map-marker-alt me-2 text-success"></i>
-                  Ciclostations
+                  Estações de bicicleta
                   {showStations && <Badge bg="success" className="ms-2">Ativo</Badge>}
                 </span>
               }

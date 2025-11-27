@@ -7,7 +7,7 @@ export const AppHeader = ({ stationsCount, cicloviasCount, hotzonesCount }) => {
       <Container>
         <Navbar.Brand href="#home" className="fw-bold">
           <i className="fas fa-bicycle me-2 text-success"></i>
-          BikeProject TCC
+          CicloAnalytics USP
           <Badge bg="success" className="ms-2">Dashboard</Badge>
         </Navbar.Brand>
         

@@ -4,7 +4,7 @@ Aplicação web desenvolvida como parte do TCC de Ciências da Computação - US
 
 ## Sobre o Projeto
 
-Este projeto visualiza dados de infraestrutura cicloviária de São Paulo, incluindo ciclofaixas, estações de bicicletas compartilhadas e análise de fluxo de viagens.
+Este projeto visualiza dados de infraestrutura cicloviária de São Paulo, incluindo ciclofaixas, Estações de bicicletas compartilhadas e análise de fluxo de viagens.
 
 O objetivo é ajudar a entender melhor como as pessoas usam o sistema de bikes compartilhadas na cidade e identificar onde a infraestrutura pode ser melhorada.
 
