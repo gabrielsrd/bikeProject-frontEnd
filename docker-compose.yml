@@ -2,11 +2,14 @@ version: '3.8'
 
 services:
   frontend:
-    build: .
+    build:
+      context: .
+      args:
+        REACT_APP_API_URL: ${REACT_APP_API_URL:-http://localhost:8000/api}
+    image: bikeproject-frontend:latest
     ports:
       - "3000:80"
-    volumes:
-      - .:/app
-      - /app/node_modules
+    # No volumes in production; container serves static build via Nginx
     environment:
-      - CHOKIDAR_USEPOLLING=true
+      # For local dev you can override API URL at build time via args above
+      - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:8000/api}
